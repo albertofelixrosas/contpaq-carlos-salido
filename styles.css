@@ -359,3 +359,15 @@ body {
     left: 1rem;
   }
 }
+
+/* Estilos para las opciones de tipo radio */
+.radio-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.radio-input {
+  margin-right: 0.5rem;
+}
