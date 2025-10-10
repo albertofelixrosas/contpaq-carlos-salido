@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contpaq Resume</title>
+     <!-- Fuente Poppins desde Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+     <!-- SheetJS para procesamiento de archivos Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    
+     <!-- Hoja de estilos  -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+     <!-- Contenedor principal  -->
+    <main class="container">
+         <!-- Encabezado con título y subtítulo  -->
+        <header class="header">
+            <h1 class="title">Resumen de Contpaq</h1>
+            <p class="subtitle">Sube tu archivo y descarga el resultado</p>
+        </header>
+
+         <!-- Formulario de carga de archivo  -->
+        <section class="upload-section">
+            <form id="uploadForm" class="upload-form">
+                 <!-- Input de archivo personalizado  -->
+                <div class="file-input-wrapper">
+                    <input 
+                        type="file" 
+                        id="fileInput" 
+                        accept=".xls,.xlsx" 
+                        class="file-input"
+                        required
+                    >
+                    <label for="fileInput" class="file-label">
+                        <span class="file-icon">📁</span>
+                        <span class="file-text">Seleccionar archivo Excel</span>
+                    </label>
+                    <span id="fileName" class="file-name"></span>
+                </div>
+
+                 <!-- Botón de envío  -->
+                <button type="submit" class="btn-submit">Procesar archivo</button>
+            </form>
+        </section>
+
+         <!-- Sección de tabla (oculta inicialmente)  -->
+        <section id="tableSection" class="table-section hidden">
+            <div class="table-header">
+                <button id="copyBtn" class="btn-copy">Copiar</button>
+            </div>
+            <div class="table-container">
+                <table id="resultTable" class="result-table">
+                     <!-- La tabla se llenará dinámicamente con JavaScript  -->
+                </table>
+            </div>
+        </section>
+    </main>
+
+     <!-- Modal de estado  -->
+    <div id="modal" class="modal hidden">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <p id="modalMessage" class="modal-message"></p>
+            <button id="closeModal" class="btn-close">Cerrar</button>
+        </div>
+    </div>
+
+     <!-- Notificación toast  -->
+    <div id="toast" class="toast hidden">
+        <p class="toast-message">¡Copiado al portapapeles!</p>
+    </div>
+
+     <!-- Script principal  -->
+    <script src="script.js"></script>
+</body>
+</html>

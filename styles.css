@@ -1,0 +1,361 @@
+/* ========================================
+   ESTILOS GENERALES
+   ======================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  background-color: #f5f5f7;
+  color: #333;
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 1rem;
+}
+
+/* ========================================
+   CONTENEDOR PRINCIPAL
+   ======================================== */
+
+.container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ========================================
+   ENCABEZADO
+   ======================================== */
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+  animation: fadeIn 0.6s ease-in;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #3a86ff;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: #666;
+}
+
+/* ========================================
+   SECCIÓN DE CARGA
+   ======================================== */
+
+.upload-section {
+  background-color: #fff;
+  padding: 2.5rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  animation: fadeIn 0.8s ease-in;
+}
+
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Input de archivo personalizado */
+.file-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background-color: #f5f5f7;
+  border: 2px dashed #3a86ff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.file-label:hover {
+  background-color: #e8f1ff;
+  border-color: #2a6fd9;
+}
+
+.file-icon {
+  font-size: 1.5rem;
+}
+
+.file-text {
+  font-size: 1rem;
+  color: #3a86ff;
+  font-weight: 500;
+}
+
+.file-name {
+  font-size: 0.9rem;
+  color: #666;
+  padding-left: 0.5rem;
+}
+
+/* Botón de envío */
+.btn-submit {
+  padding: 1rem 2rem;
+  background-color: #3a86ff;
+  color: #fff;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(58, 134, 255, 0.3);
+}
+
+.btn-submit:hover {
+  background-color: #2a6fd9;
+  box-shadow: 0 4px 12px rgba(58, 134, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-submit:active {
+  transform: translateY(0);
+}
+
+/* ========================================
+   SECCIÓN DE TABLA
+   ======================================== */
+
+.table-section {
+  background-color: #fff;
+  padding: 2rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  animation: fadeIn 0.8s ease-in;
+}
+
+.table-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+
+.btn-copy {
+  padding: 0.75rem 1.5rem;
+  background-color: #3a86ff;
+  color: #fff;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(58, 134, 255, 0.3);
+}
+
+.btn-copy:hover {
+  background-color: #2a6fd9;
+  transform: translateY(-2px);
+}
+
+.table-container {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.result-table th,
+.result-table td {
+  padding: 0.875rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.result-table th {
+  background-color: #f5f5f7;
+  font-weight: 600;
+  color: #3a86ff;
+}
+
+.result-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+/* Aplicar estilos para las últimas 3 celdas de cada fila en el cuerpo de la tabla */
+.result-table tbody tr td:nth-last-child(-n+3) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ========================================
+   MODAL
+   ======================================== */
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal:not(.hidden) {
+  opacity: 1;
+}
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  position: relative;
+  background-color: #fff;
+  padding: 2.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  z-index: 1001;
+  animation: slideIn 0.3s ease;
+}
+
+.modal-message {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 1.5rem;
+}
+
+.btn-close {
+  padding: 0.75rem 2rem;
+  background-color: #3a86ff;
+  color: #fff;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-close:hover {
+  background-color: #2a6fd9;
+}
+
+/* ========================================
+   TOAST
+   ======================================== */
+
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background-color: #3a86ff;
+  color: #fff;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 4px 12px rgba(58, 134, 255, 0.4);
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.toast:not(.hidden) {
+  opacity: 1;
+}
+
+.toast-message {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* ========================================
+   UTILIDADES
+   ======================================== */
+
+.hidden {
+  display: none !important;
+}
+
+/* ========================================
+   ANIMACIONES
+   ======================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+  .title {
+    font-size: 2rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .upload-section,
+  .table-section {
+    padding: 1.5rem;
+  }
+
+  .toast {
+    bottom: 1rem;
+    right: 1rem;
+    left: 1rem;
+  }
+}
