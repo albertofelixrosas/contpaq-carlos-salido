@@ -154,7 +154,7 @@ function generateTableBody(data) {
   // Variables para mantener el estado actual de los valores del segmento y cuenta contable
   let currentAccountName = ""
   let currentSegmentName = ""
-  const segmentNames = []
+  const segmentNames = new Set()
   // Se lee las filas de principio a fin
   for (let i = 1; i < data.length; i++) {
     // Se obtiene la fila actual
@@ -175,7 +175,6 @@ function generateTableBody(data) {
     if (firstCell.toLowerCase().startsWith('segmento')) {
       // El nombre del segmento se encuentra despues de "Segmento:  " en esa misma celda
       currentSegmentName = firstCell.split(' ').filter((_, index) => index > 2).join(' ').trim()
-      segmentNames.push(currentSegmentName)
     }
     // 3️⃣ Si la primera celda es una fecha común de Excel
     if (firstCell.match(excelCommonDateRegex)) {
@@ -207,6 +206,7 @@ function generateTableBody(data) {
         const td = document.createElement("td")
         td.textContent = value
         tr.appendChild(td)
+        segmentNames.add(newRowObject.vuelta)
       })
       // Se agrega la fila al cuerpo de la tabla
       tbody.appendChild(tr)
@@ -214,7 +214,7 @@ function generateTableBody(data) {
   }
 
   // Se crea el listado de segmentos encontrados al localStorage
-  const segmentList = segmentNames.map(segment => {
+  const segmentList = Array.from(segmentNames).map(segment => {
     return {
       segment,
       count: 0,
@@ -397,13 +397,12 @@ function updateSegmentEditorVisibility() {
   if (segmentList.length > 0) {
     segmentEditor.classList.remove("hidden")
     noDataComponent.classList.add("hidden")
+    populateSegmentForm()
   } else {
     segmentEditor.classList.add("hidden")
     noDataComponent.classList.remove("hidden")
   }
 }
-
-updateSegmentEditorVisibility()
 
 // ========================================
 // ACTUALIZAR FORMULARIO DE SEGMENTOS
@@ -456,6 +455,7 @@ function updateSegmentData() {
 
   localStorage.setItem("segmentList", JSON.stringify(updatedSegmentList))
   showToast("Segmentos actualizados correctamente")
+  populateSegmentForm()
 }
 
 // Evento: Envío del formulario de segmentos
