@@ -23,6 +23,23 @@
             <p class="subtitle">Sube tu archivo y descarga el resultado</p>
         </header>
 
+         <!-- Componente de edición de segmentos -->
+        <section id="segmentEditor" class="segment-editor hidden">
+            <h2 class="segment-title">Editar Segmentos</h2>
+            <form id="segmentForm" class="segment-form">
+                <div id="segmentGrid" class="segment-grid">
+                    <!-- Los elementos se llenarán dinámicamente con JavaScript -->
+                </div>
+                <button type="submit" class="btn-submit">Aceptar</button>
+            </form>
+        </section>
+
+         <!-- Componente para mostrar cuando no hay datos en localStorage -->
+        <section id="noData" class="no-data hidden">
+            <h2 class="no-data-title">No hay datos cargados</h2>
+            <p class="no-data-message">Por favor, sube un archivo para comenzar.</p>
+        </section>
+
          <!-- Formulario de carga de archivo  -->
         <section class="upload-section">
             <form id="uploadForm" class="upload-form">

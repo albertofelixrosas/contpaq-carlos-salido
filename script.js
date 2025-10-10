@@ -12,6 +12,8 @@ const modal = document.querySelector("#modal")
 const modalMessage = document.querySelector("#modalMessage")
 const closeModalBtn = document.querySelector("#closeModal")
 const toast = document.querySelector("#toast")
+const segmentEditor = document.querySelector("#segmentEditor")
+const noDataComponent = document.querySelector("#noData")
 
 // ========================================
 // EVENTOS
@@ -22,9 +24,9 @@ const toast = document.querySelector("#toast")
 // REGEX
 // =======================================
 
-const accountNumberRegex = /^\d{3}-\d{3}-\d{3}-\d{3}-\d{2}$/;
+const accountNumberRegex = /^\d{3}-\d{3}-\d{3}-\d{3}-\d{2}$/
 const excelCommonDateRegex =
-  /^([0-2]?\d|3[01])\/(Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)\/\d{4}\s?$/;
+  /^([0-2]?\d|3[01])\/(Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)\/\d{4}\s?$/
 
 // Evento: Mostrar nombre del archivo seleccionado
 fileInput.addEventListener("change", (e) => {
@@ -79,6 +81,14 @@ copyBtn.addEventListener("click", () => {
   copyTableToClipboard()
 })
 
+// Evento mostrar el componente de edición de segmentos si hay datos en localStorage
+document.addEventListener("DOMContentLoaded", () => {
+  
+})
+
+// Evento para actualizar la visibilidad del componente de edición de segmentos cuando se actualice el localStorage
+updateSegmentEditorVisibility()
+
 // ========================================
 // FUNCIONES DE MODAL
 // ========================================
@@ -129,7 +139,7 @@ async function generateResultsTable() {
   resultTable.appendChild(thead)
 
   // Crear cuerpo de la tabla usando los datos procesados
-  generateTableBody(sampleData);
+  generateTableBody(sampleData)
 }
 
 /**
@@ -144,12 +154,13 @@ function generateTableBody(data) {
   // Variables para mantener el estado actual de los valores del segmento y cuenta contable
   let currentAccountName = ""
   let currentSegmentName = ""
+  const segmentNames = []
   // Se lee las filas de principio a fin
   for (let i = 1; i < data.length; i++) {
     // Se obtiene la fila actual
     const row = data[i]
     // Se obtiene el valor de la primera columna
-    const firstCell = String(row?.[0] || '').trim();
+    const firstCell = String(row?.[0] || '').trim()
 
     // Se identifica el tipo de fila según el valor de la primera columna
 
@@ -157,23 +168,24 @@ function generateTableBody(data) {
     // 1️⃣ Si la primera celda es un codigo de cuenta contable
     if (firstCell.match(accountNumberRegex)) {
       // La segunda celda es el nombre de la cuenta contable, y se guarda en la variable de estado
-      currentAccountName = String(row?.[1] || '').trim();
+      currentAccountName = String(row?.[1] || '').trim()
     }
     // Segmento:  100 GG
     // 2️⃣ Si la primera celda empieza con "segmento"
     if (firstCell.toLowerCase().startsWith('segmento')) {
       // El nombre del segmento se encuentra despues de "Segmento:  " en esa misma celda
-      currentSegmentName = firstCell.split(' ').filter((_, index) => index > 2).join(' ').trim();
+      currentSegmentName = firstCell.split(' ').filter((_, index) => index > 2).join(' ').trim()
+      segmentNames.push(currentSegmentName)
     }
     // 3️⃣ Si la primera celda es una fecha común de Excel
     if (firstCell.match(excelCommonDateRegex)) {
       // Se crea un objeto con los datos de la fila
-      const rowObject = createObjectFromRow(row);
+      const rowObject = createObjectFromRow(row)
 
       // Quiero convertir el objeto a un nuevo objeto que incluya los valores actuales de segmento y cuenta contable
       // FECHA	EGRESOS	FOLIO	PROVEEDOR	FACTURA	 IMPORTE 	CONCEPTO	VUELTA	MES	AÑO
 
-      const { monthString, year } = parseDateString(rowObject.fecha);
+      const { monthString, year } = parseDateString(rowObject.fecha)
 
       const newRowObject = {
         fecha: rowObject.fecha,
@@ -186,22 +198,50 @@ function generateTableBody(data) {
         vuelta: currentSegmentName,
         mes: monthString,
         año: year,
-      };
+      }
 
       // Se crea una nueva fila en la tabla
-      const tr = document.createElement("tr");
+      const tr = document.createElement("tr")
       // Se agregan las celdas a la fila
       Object.values(newRowObject).forEach((value) => {
-        const td = document.createElement("td");
-        td.textContent = value;
-        tr.appendChild(td);
-      });
+        const td = document.createElement("td")
+        td.textContent = value
+        tr.appendChild(td)
+      })
       // Se agrega la fila al cuerpo de la tabla
-      tbody.appendChild(tr);
+      tbody.appendChild(tr)
     }
   }
+
+  // Se crea el listado de segmentos encontrados al localStorage
+  const segmentList = segmentNames.map(segment => {
+    return {
+      segment,
+      count: 0,
+    }
+  })
+
+  localStorage.setItem('segmentList', JSON.stringify(segmentList))
+  updateSegmentEditorVisibility()
+
   // Se agrega el cuerpo a la tabla
   resultTable.appendChild(tbody)
+}
+
+function showSegmentEditor() {
+  segmentEditor.classList.remove("hidden")
+}
+
+function hideSegmentEditor() {
+  segmentEditor.classList.add("hidden")
+}
+
+function showNoDataComponent() {
+  noDataComponent.classList.remove("hidden")
+}
+
+function hideNoDataComponent() {
+  noDataComponent.classList.add("hidden")
 }
 
 /**
@@ -327,16 +367,103 @@ async function processExcelFile(file) {
 function parseDateString(dateString) {
   const months = [
     'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
-  ];
+  ]
 
-  const [day, month, year] = dateString.split('/');
+  const [_, month, year] = dateString.split('/')
 
   if (!months.includes(month)) {
-    throw new Error(`Mes inválido: ${month}`);
+    throw new Error(`Mes inválido: ${month}`)
   }
 
   return {
     monthString: month,
     year: parseInt(year, 10)
-  };
+  }
 }
+
+// ========================================
+// ACTUALIZAR VISIBILIDAD DEL COMPONENTE DE SEGMENTOS
+// ========================================
+
+/**
+ * Actualiza la visibilidad del componente de edición de segmentos
+ */
+function updateSegmentEditorVisibility() {
+  const segmentEditor = document.querySelector(".segment-editor")
+  const noDataComponent = document.querySelector(".no-data")
+
+  const segmentList = JSON.parse(localStorage.getItem("segmentList")) || []
+
+  if (segmentList.length > 0) {
+    segmentEditor.classList.remove("hidden")
+    noDataComponent.classList.add("hidden")
+  } else {
+    segmentEditor.classList.add("hidden")
+    noDataComponent.classList.remove("hidden")
+  }
+}
+
+updateSegmentEditorVisibility()
+
+// ========================================
+// ACTUALIZAR FORMULARIO DE SEGMENTOS
+// ========================================
+
+/**
+ * Llena el formulario de segmentos con los datos del localStorage
+ */
+function populateSegmentForm() {
+  const segmentGrid = document.querySelector("#segmentGrid")
+  const segmentList = JSON.parse(localStorage.getItem("segmentList")) || []
+
+  // Limpiar contenido existente
+  segmentGrid.innerHTML = ""
+
+  // Crear elementos dinámicamente
+  segmentList.forEach(({ segment, count }) => {
+    const segmentItem = document.createElement("div")
+    segmentItem.classList.add("segment-item")
+
+    const segmentName = document.createElement("span")
+    segmentName.classList.add("segment-name")
+    segmentName.textContent = segment
+
+    const segmentInput = document.createElement("input")
+    segmentInput.type = "number"
+    segmentInput.classList.add("segment-input")
+    segmentInput.value = count
+    segmentInput.min = 0
+
+    segmentItem.appendChild(segmentName)
+    segmentItem.appendChild(segmentInput)
+    segmentGrid.appendChild(segmentItem)
+  })
+}
+
+/**
+ * Actualiza los datos del localStorage con los valores del formulario
+ */
+function updateSegmentData() {
+  const segmentGrid = document.querySelector("#segmentGrid")
+  const segmentItems = segmentGrid.querySelectorAll(".segment-item")
+
+  const updatedSegmentList = Array.from(segmentItems).map((item) => {
+    const segment = item.querySelector(".segment-name").textContent
+    const count = parseInt(item.querySelector(".segment-input").value, 10) || 0
+
+    return { segment, count }
+  })
+
+  localStorage.setItem("segmentList", JSON.stringify(updatedSegmentList))
+  showToast("Segmentos actualizados correctamente")
+}
+
+// Evento: Envío del formulario de segmentos
+const segmentForm = document.querySelector("#segmentForm")
+segmentForm.addEventListener("submit", (e) => {
+  e.preventDefault()
+  updateSegmentData()
+})
+
+// Llenar el formulario al cargar la página
+populateSegmentForm()

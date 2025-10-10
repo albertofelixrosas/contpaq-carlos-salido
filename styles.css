@@ -305,6 +305,7 @@ body {
    UTILIDADES
    ======================================== */
 
+/* Estilos para ocultar componentes */
 .hidden {
   display: none !important;
 }
@@ -370,4 +371,92 @@ body {
 
 .radio-input {
   margin-right: 0.5rem;
+}
+
+/* Estilos para el editor de segmentos */
+.segment-editor {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  animation: fadeIn 0.8s ease-in;
+}
+
+.segment-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #3a86ff;
+  margin-bottom: 1rem;
+}
+
+.segment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.segment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.segment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background-color: #f5f5f7;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+}
+
+.segment-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.segment-input {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.btn-accept {
+  padding: 0.75rem 1.5rem;
+  background-color: #3a86ff;
+  color: #fff;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-accept:hover {
+  background-color: #2a6fd9;
+}
+
+/* Estilos para el componente de no datos */
+.no-data {
+  margin-block: 2rem;
+  padding: 1.5rem;
+  background-color: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  animation: fadeIn 0.8s ease-in;
+}
+
+.no-data-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ff3a3a;
+  margin-bottom: 1rem;
+}
+
+.no-data-message {
+  font-size: 1rem;
+  color: #666;
 }
