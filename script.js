@@ -14,6 +14,7 @@ const closeModalBtn = document.querySelector("#closeModal")
 const toast = document.querySelector("#toast")
 const segmentEditor = document.querySelector("#segmentEditor")
 const noDataComponent = document.querySelector("#noData")
+const radioOptions = document.querySelector("#radioOptions")
 
 // ========================================
 // EVENTOS
@@ -52,16 +53,34 @@ uploadForm.addEventListener("submit", (e) => {
   // Mostrar modal de procesamiento
   showModal("Procesando archivo...")
 
-  // Llamar directamente al método que genera la tabla
-  generateResultsTable()
-    .then(() => {
-      // Mostrar sección de tabla
-      tableSection.classList.remove("hidden")
-      showModal("Procesamiento exitoso")
-    })
-    .catch((error) => {
-      showModal("No fue posible procesar el archivo: " + error)
-    })
+  // Dependiendo del valor del checkbox, se puede llamar a diferentes funciones (radioOptions)
+  const selectedOption = document.querySelector('input[name="step"]:checked').value
+  console.log("Opción seleccionada:", selectedOption)
+  if (selectedOption === "apk") {
+    // Lógica para APK's (si es necesario)
+    generateResultsTableForAPK()
+      .then(() => {
+        // Mostrar sección de tabla
+        tableSection.classList.remove("hidden")
+        showModal("Procesamiento exitoso")
+      })
+      .catch((error) => {
+        showModal("No fue posible procesar el archivo: " + error)
+      })
+  } else if (selectedOption === "gg") {
+    // Lógica para GG's (si es necesario)
+    generateResultsTableForGG()
+      .then(() => {
+        // Mostrar sección de tabla
+        tableSection.classList.remove("hidden")
+        showModal("Procesamiento exitoso")
+      })
+      .catch((error) => {
+        showModal("No fue posible procesar el archivo: " + error)
+      })
+  }
+
+
 })
 
 // Evento: Cerrar modal
@@ -83,7 +102,7 @@ copyBtn.addEventListener("click", () => {
 
 // Evento mostrar el componente de edición de segmentos si hay datos en localStorage
 document.addEventListener("DOMContentLoaded", () => {
-  
+
 })
 
 // Evento para actualizar la visibilidad del componente de edición de segmentos cuando se actualice el localStorage
@@ -117,7 +136,7 @@ function hideModal() {
  * Genera una tabla de ejemplo (placeholder)
  * Esta función será reemplazada con lógica real de SheetJS
  */
-async function generateResultsTable() {
+async function generateResultsTableForAPK() {
   // Datos de ejemplo
   const sampleData = await processExcelFile(fileInput.files[0])
 
@@ -139,18 +158,47 @@ async function generateResultsTable() {
   resultTable.appendChild(thead)
 
   // Crear cuerpo de la tabla usando los datos procesados
-  generateTableBody(sampleData)
+  generateTableBodyForAPK(sampleData)
+}
+
+/**
+ * Genera una tabla de ejemplo (placeholder)
+ * Esta función será reemplazada con lógica real de SheetJS
+ */
+async function generateResultsTableForGG() {
+  // Datos de ejemplo
+  const sampleData = await processExcelFile(fileInput.files[0])
+
+  // Limpiar tabla existente
+  resultTable.innerHTML = ""
+
+  // Crear encabezados
+  const thead = document.createElement("thead")
+  const headerRow = document.createElement("tr")
+
+  const headers = ["Fecha", "Egresos", "Folio", "Proveedor", "Factura", "Importe", "Concepto", "Vuelta", "Mes", "Año"]
+  headers.forEach((header) => {
+    const th = document.createElement("th")
+    th.textContent = header
+    headerRow.appendChild(th)
+  })
+
+  thead.appendChild(headerRow)
+  resultTable.appendChild(thead)
+
+  // Crear cuerpo de la tabla usando los datos procesados
+  generateTableBodyForGG(sampleData)
 }
 
 /**
  * Genera el cuerpo de la tabla a partir de los datos proporcionados
  * @param {string[][]} data 
  */
-function generateTableBody(data) {
+function generateTableBodyForAPK(data) {
   const tbody = document.createElement("tbody")
 
   // Aquí va la lógica para procesar los datos y llenar las filas de la tabla
-  
+
   // Variables para mantener el estado actual de los valores del segmento y cuenta contable
   let currentAccountName = ""
   let currentSegmentName = ""
@@ -223,6 +271,82 @@ function generateTableBody(data) {
 
   localStorage.setItem('segmentList', JSON.stringify(segmentList))
   updateSegmentEditorVisibility()
+
+  // Se agrega el cuerpo a la tabla
+  resultTable.appendChild(tbody)
+}
+
+/**
+ * Genera el cuerpo de la tabla a partir de los datos proporcionados
+ * @param {string[][]} data 
+ */
+function generateTableBodyForGG(data) {
+  const tbody = document.createElement("tbody")
+
+  // Variables para mantener el estado actual de los valores del segmento y cuenta contable
+  let currentAccountName = ""
+  const accounts = []
+  // Se lee las filas de principio a fin
+  for (let i = 1; i < data.length; i++) {
+    // Se obtiene la fila actual
+    const row = data[i]
+    // Se obtiene el valor de la primera columna
+    const firstCell = String(row?.[0] || '').trim()
+    const fifthCell = String(row?.[4] || '').trim()
+    const sixthCell = String(row?.[5] || '').trim()
+
+    // Se identifica el tipo de fila según el valor de la primera columna
+
+    // 133-001-000-000-00	SUELDOS Y SALARIOS
+    // 1️⃣ Si la primera celda es un codigo de cuenta contable
+    if (firstCell.match(accountNumberRegex)) {
+      // La segunda celda es el nombre de la cuenta contable, y se guarda en la variable de estado
+      currentAccountName = String(row?.[1] || '').trim()
+    }
+    // 2️⃣ Si la cuarta celda comienza con "Total" y la quinta celda es un número que representa el total
+    if (fifthCell.endsWith(currentAccountName + ':') && !isNaN(parseFloat(sixthCell.replace(/,/g, '')))) {
+      // Se guarda el nombre de la cuenta contable en el array de cuentas
+      accounts.push({
+        account: currentAccountName,
+        total: parseFloat(sixthCell.replace(/,/g, '')),
+      })
+    }
+
+  }
+
+    /*
+    EQ. TRANSPORTE
+    GASOLINA
+    SUELDOS GJAS
+    SUELDOS ADMON
+  */
+
+  // TODO: Procesar las cuentas para obtener los totales necesarios
+  // para continuar con la distribución del gasto
+  // y la creación de las filas de la tabla final de GG's
+
+  /*
+  MANTO.EQUIPO TRANSPORTE
+  GASOLINA o 10.GASOLINA VARIOS
+  SUELDOS Y SALARIOS
+  */
+
+  let totalGjas = 0
+  const finalAccounts = []
+  for (const account of accounts) {
+    if (account.account === 'EQ. TRANSPORTE') {
+
+    } else if (account.account === 'GASOLINA') {
+
+    } else if (account.account === 'SUELDOS GJAS') {
+
+    } else if (account.account === 'SUELDOS ADMON') {
+
+    }
+  }
+
+
+  console.log(accounts);
 
   // Se agrega el cuerpo a la tabla
   resultTable.appendChild(tbody)
