@@ -123,6 +123,7 @@
          <!-- Sección de tabla (oculta inicialmente)  -->
         <section id="tableSection" class="table-section hidden">
             <div class="table-header">
+                <button id="verifyBtn" class="btn-verify">Verificar</button>
                 <button id="copyBtn" class="btn-copy">Copiar</button>
             </div>
             <div class="table-container">
@@ -145,6 +146,67 @@
      <!-- Notificación toast  -->
     <div id="toast" class="toast hidden">
         <p class="toast-message">¡Copiado al portapapeles!</p>
+    </div>
+
+     <!-- Pop-up carrusel para verificación de datos -->
+    <div id="verifyCarousel" class="verify-carousel hidden">
+        <div class="carousel-overlay"></div>
+        <div class="carousel-container">
+            <div class="carousel-header">
+                <h3 class="carousel-title">Verificar Datos APK</h3>
+                <button id="closeCarousel" class="btn-close-carousel">✕</button>
+            </div>
+            
+            <div class="carousel-content">
+                <div class="carousel-info">
+                    <span class="carousel-counter">
+                        Registro <span id="currentIndex">1</span> de <span id="totalRecords">0</span>
+                    </span>
+                </div>
+                
+                <div class="data-grid">
+                    <div class="data-row">
+                        <label class="data-label">Fecha:</label>
+                        <span id="dataFecha" class="data-value"></span>
+                    </div>
+                    <div class="data-row">
+                        <label class="data-label">Proveedor:</label>
+                        <span id="dataProveedor" class="data-value"></span>
+                    </div>
+                    <div class="data-row">
+                        <label class="data-label">Factura:</label>
+                        <span id="dataFactura" class="data-value"></span>
+                    </div>
+                    <div class="data-row">
+                        <label class="data-label">Concepto Actual:</label>
+                        <span id="dataConcepto" class="data-value current-concept"></span>
+                    </div>
+                    <div class="data-row">
+                        <label class="data-label">Vuelta:</label>
+                        <span id="dataVuelta" class="data-value"></span>
+                    </div>
+                </div>
+                
+                <div class="concept-selector">
+                    <label for="conceptSelect" class="concept-label">Cambiar concepto:</label>
+                    <select id="conceptSelect" class="concept-select">
+                        <option value="">Seleccionar concepto...</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="carousel-controls">
+                <div class="navigation-controls">
+                    <button id="prevRecord" class="btn-nav">← Anterior</button>
+                    <button id="nextRecord" class="btn-nav">Siguiente →</button>
+                </div>
+                
+                <div class="action-controls">
+                    <button id="changeConceptBtn" class="btn-change">Cambiar</button>
+                    <button id="skipRecord" class="btn-skip">Saltar</button>
+                </div>
+            </div>
+        </div>
     </div>
 
      <!-- Script principal  -->

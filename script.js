@@ -23,6 +23,27 @@ const clearAllConceptsBtn = document.querySelector("#clearAllConceptsBtn")
 const conceptsList = document.querySelector("#conceptsList")
 const conceptsCounter = document.querySelector("#conceptsCounter")
 
+// Elementos del carrusel de verificación
+const verifyBtn = document.querySelector("#verifyBtn")
+const verifyCarousel = document.querySelector("#verifyCarousel")
+const closeCarouselBtn = document.querySelector("#closeCarousel")
+const currentIndexSpan = document.querySelector("#currentIndex")
+const totalRecordsSpan = document.querySelector("#totalRecords")
+const dataFecha = document.querySelector("#dataFecha")
+const dataProveedor = document.querySelector("#dataProveedor")
+const dataFactura = document.querySelector("#dataFactura")
+const dataConcepto = document.querySelector("#dataConcepto")
+const dataVuelta = document.querySelector("#dataVuelta")
+const conceptSelect = document.querySelector("#conceptSelect")
+const prevRecordBtn = document.querySelector("#prevRecord")
+const nextRecordBtn = document.querySelector("#nextRecord")
+const changeConceptBtn = document.querySelector("#changeConceptBtn")
+const skipRecordBtn = document.querySelector("#skipRecord")
+
+// Variables del carrusel
+let currentRecordIndex = 0
+let apkDataArray = []
+
 // ========================================
 // EVENTOS
 // ========================================
@@ -132,6 +153,67 @@ clearAllConceptsBtn.addEventListener("click", () => {
   showConfirmDialog("¿Estás seguro de que quieres eliminar todos los conceptos?", () => {
     clearAllConcepts()
   })
+})
+
+// Eventos del carrusel de verificación
+verifyBtn.addEventListener("click", () => {
+  openVerifyCarousel()
+})
+
+closeCarouselBtn.addEventListener("click", () => {
+  closeVerifyCarousel()
+})
+
+verifyCarousel.addEventListener("click", (e) => {
+  if (e.target === verifyCarousel || e.target.classList.contains("carousel-overlay")) {
+    closeVerifyCarousel()
+  }
+})
+
+prevRecordBtn.addEventListener("click", () => {
+  navigateRecord(-1)
+})
+
+nextRecordBtn.addEventListener("click", () => {
+  navigateRecord(1)
+})
+
+changeConceptBtn.addEventListener("click", () => {
+  changeRecordConcept()
+})
+
+skipRecordBtn.addEventListener("click", () => {
+  navigateRecord(1)
+})
+
+conceptSelect.addEventListener("change", () => {
+  validateChangeButton()
+})
+
+// Eventos de teclado para el carrusel
+document.addEventListener("keydown", (e) => {
+  if (!verifyCarousel.classList.contains("hidden")) {
+    switch(e.key) {
+      case "ArrowLeft":
+        e.preventDefault()
+        navigateRecord(-1)
+        break
+      case "ArrowRight":
+        e.preventDefault()
+        navigateRecord(1)
+        break
+      case "Enter":
+        e.preventDefault()
+        if (!changeConceptBtn.disabled) {
+          changeRecordConcept()
+        }
+        break
+      case "Escape":
+        e.preventDefault()
+        closeVerifyCarousel()
+        break
+    }
+  }
 })
 
 // Evento para actualizar la visibilidad del componente de edición de segmentos cuando se actualice el localStorage
@@ -972,4 +1054,242 @@ function conceptExists(conceptText) {
   return concepts.some(
     concept => concept.toLowerCase() === conceptText.toLowerCase()
   )
+}
+
+// ========================================
+// CARRUSEL DE VERIFICACIÓN APK
+// ========================================
+
+/**
+ * Abre el carrusel de verificación de datos APK
+ */
+function openVerifyCarousel() {
+  // Obtener datos de APK del localStorage
+  apkDataArray = getApkDataFromStorage()
+  
+  if (apkDataArray.length === 0) {
+    showModal("No hay datos APK para verificar. Procesa primero un archivo.")
+    return
+  }
+  
+  // Inicializar el carrusel
+  currentRecordIndex = 0
+  populateConceptSelector()
+  displayCurrentRecord()
+  updateNavigationButtons()
+  
+  // Mostrar el carrusel
+  verifyCarousel.classList.remove("hidden")
+}
+
+/**
+ * Cierra el carrusel de verificación
+ */
+function closeVerifyCarousel() {
+  verifyCarousel.classList.add("hidden")
+  currentRecordIndex = 0
+  conceptSelect.value = ""
+}
+
+/**
+ * Obtiene los datos APK del localStorage
+ * @returns {Array<Object>} Array de objetos APK
+ */
+function getApkDataFromStorage() {
+  try {
+    return JSON.parse(localStorage.getItem("apkData")) || []
+  } catch (error) {
+    console.error("Error al leer datos APK del localStorage:", error)
+    return []
+  }
+}
+
+/**
+ * Guarda los datos APK en el localStorage
+ * @param {Array<Object>} data Array de objetos APK a guardar
+ */
+function saveApkDataToStorage(data) {
+  try {
+    localStorage.setItem("apkData", JSON.stringify(data))
+  } catch (error) {
+    console.error("Error al guardar datos APK en localStorage:", error)
+    showModal("Error al guardar los datos")
+  }
+}
+
+/**
+ * Popula el selector de conceptos con los conceptos disponibles
+ */
+function populateConceptSelector() {
+  const concepts = getConceptsFromStorage()
+  
+  // Limpiar opciones existentes excepto la primera
+  conceptSelect.innerHTML = '<option value="">Seleccionar concepto...</option>'
+  
+  // Ordenar conceptos alfabéticamente (insensible a mayúsculas/minúsculas)
+  const sortedConcepts = concepts.sort((a, b) => {
+    return a.toLowerCase().localeCompare(b.toLowerCase())
+  })
+  
+  // Agregar conceptos ordenados como opciones
+  sortedConcepts.forEach(concept => {
+    const option = document.createElement("option")
+    option.value = concept
+    option.textContent = concept
+    conceptSelect.appendChild(option)
+  })
+  
+  // Actualizar totales
+  totalRecordsSpan.textContent = apkDataArray.length
+}
+
+/**
+ * Muestra el registro actual en el carrusel
+ */
+function displayCurrentRecord() {
+  if (currentRecordIndex < 0 || currentRecordIndex >= apkDataArray.length) {
+    return
+  }
+  
+  const record = apkDataArray[currentRecordIndex]
+  
+  // Actualizar información del registro
+  currentIndexSpan.textContent = currentRecordIndex + 1
+  dataFecha.textContent = record.fecha || ""
+  dataProveedor.textContent = record.proveedor || ""
+  dataFactura.textContent = record.factura || ""
+  dataConcepto.textContent = record.concepto || ""
+  dataVuelta.textContent = record.vuelta || ""
+  
+  // Resetear selector de conceptos
+  conceptSelect.value = ""
+  validateChangeButton()
+}
+
+/**
+ * Navega entre registros
+ * @param {number} direction Dirección de navegación (-1 para anterior, 1 para siguiente)
+ */
+function navigateRecord(direction) {
+  const newIndex = currentRecordIndex + direction
+  
+  if (newIndex >= 0 && newIndex < apkDataArray.length) {
+    currentRecordIndex = newIndex
+    displayCurrentRecord()
+    updateNavigationButtons()
+  }
+}
+
+/**
+ * Actualiza el estado de los botones de navegación
+ */
+function updateNavigationButtons() {
+  prevRecordBtn.disabled = currentRecordIndex <= 0
+  nextRecordBtn.disabled = currentRecordIndex >= apkDataArray.length - 1
+}
+
+/**
+ * Valida si se puede habilitar el botón de cambiar
+ */
+function validateChangeButton() {
+  const selectedConcept = conceptSelect.value.trim()
+  const currentConcept = apkDataArray[currentRecordIndex]?.concepto || ""
+  
+  // Habilitar solo si se seleccionó un concepto diferente al actual
+  changeConceptBtn.disabled = !selectedConcept || selectedConcept === currentConcept
+}
+
+/**
+ * Cambia el concepto del registro actual
+ */
+function changeRecordConcept() {
+  const selectedConcept = conceptSelect.value.trim()
+  
+  if (!selectedConcept) {
+    showModal("Selecciona un concepto para continuar")
+    return
+  }
+  
+  const currentConcept = apkDataArray[currentRecordIndex].concepto
+  
+  if (selectedConcept === currentConcept) {
+    showModal("El concepto seleccionado es el mismo que el actual")
+    return
+  }
+  
+  // Actualizar el concepto en el array directamente
+  apkDataArray[currentRecordIndex].concepto = selectedConcept
+  
+  // Guardar en localStorage
+  saveApkDataToStorage(apkDataArray)
+  
+  // Actualizar la tabla si está visible
+  updateTableAfterConceptChange()
+  
+  // Mostrar confirmación
+  showToast()
+  
+  // Avanzar al siguiente registro o cerrar si es el último
+  if (currentRecordIndex < apkDataArray.length - 1) {
+    navigateRecord(1)
+  } else {
+    // Es el último registro, cerrar automáticamente
+    closeVerifyCarousel()
+  }
+}
+
+/**
+ * Actualiza la tabla después de cambiar un concepto
+ */
+function updateTableAfterConceptChange() {
+  // Verificar si la tabla está visible y contiene datos
+  if (!tableSection.classList.contains("hidden") && resultTable.querySelector("tbody")) {
+    // Regenerar el cuerpo de la tabla con los nuevos datos
+    const tbody = resultTable.querySelector("tbody")
+    tbody.innerHTML = ""
+    
+    // Recrear las filas con los datos actualizados
+    apkDataArray.forEach(record => {
+      const tr = document.createElement("tr")
+      
+      // Crear celdas en el orden correcto
+      const values = [
+        record.fecha,
+        record.egresos,
+        record.folio,
+        record.proveedor,
+        record.factura,
+        record.importe,
+        record.concepto, // Este es el campo que pudo haber cambiado
+        record.vuelta,
+        record.mes,
+        record.año
+      ]
+      
+      values.forEach(value => {
+        const td = document.createElement("td")
+        td.textContent = value
+        tr.appendChild(td)
+      })
+      
+      tbody.appendChild(tr)
+    })
+  }
+}
+
+/**
+ * Función helper para mostrar toast personalizado
+ * @param {string} message Mensaje personalizado (opcional)
+ */
+function showToast(message = "¡Concepto actualizado correctamente!") {
+  const toastMessage = document.querySelector(".toast-message")
+  const originalMessage = toastMessage.textContent
+  
+  toastMessage.textContent = message
+  toast.classList.remove("hidden")
+  
+  setTimeout(() => {
+    hideToast()
+    toastMessage.textContent = originalMessage
+  }, 3000)
 }
