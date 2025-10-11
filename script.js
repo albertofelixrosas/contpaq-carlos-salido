@@ -16,6 +16,13 @@ const segmentEditor = document.querySelector("#segmentEditor")
 const noDataComponent = document.querySelector("#noData")
 const radioOptions = document.querySelector("#radioOptions")
 
+// Elementos del componente de conceptos
+const conceptInput = document.querySelector("#conceptInput")
+const addConceptBtn = document.querySelector("#addConceptBtn")
+const clearAllConceptsBtn = document.querySelector("#clearAllConceptsBtn")
+const conceptsList = document.querySelector("#conceptsList")
+const conceptsCounter = document.querySelector("#conceptsCounter")
+
 // ========================================
 // EVENTOS
 // ========================================
@@ -102,7 +109,29 @@ copyBtn.addEventListener("click", () => {
 
 // Evento mostrar el componente de edición de segmentos si hay datos en localStorage
 document.addEventListener("DOMContentLoaded", () => {
+  initializeConceptsManager()
+})
 
+// Eventos del componente de conceptos
+addConceptBtn.addEventListener("click", () => {
+  addConcept()
+})
+
+conceptInput.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault()
+    addConcept()
+  }
+})
+
+conceptInput.addEventListener("input", () => {
+  validateConceptInput()
+})
+
+clearAllConceptsBtn.addEventListener("click", () => {
+  showConfirmDialog("¿Estás seguro de que quieres eliminar todos los conceptos?", () => {
+    clearAllConcepts()
+  })
 })
 
 // Evento para actualizar la visibilidad del componente de edición de segmentos cuando se actualice el localStorage
@@ -591,3 +620,348 @@ segmentForm.addEventListener("submit", (e) => {
 
 // Llenar el formulario al cargar la página
 populateSegmentForm()
+
+// ========================================
+// GESTIÓN DE CONCEPTOS
+// ========================================
+
+/**
+ * Inicializa el gestor de conceptos cargando los datos del localStorage
+ */
+function initializeConceptsManager() {
+  loadConceptsFromStorage()
+  updateConceptsCounter()
+  validateConceptInput()
+}
+
+/**
+ * Obtiene los conceptos del localStorage
+ * @returns {Array<string>} Array de conceptos
+ */
+function getConceptsFromStorage() {
+  try {
+    return JSON.parse(localStorage.getItem("concepts")) || []
+  } catch (error) {
+    console.error("Error al leer conceptos del localStorage:", error)
+    return []
+  }
+}
+
+/**
+ * Guarda los conceptos en el localStorage
+ * @param {Array<string>} concepts Array de conceptos a guardar
+ */
+function saveConceptsToStorage(concepts) {
+  try {
+    localStorage.setItem("concepts", JSON.stringify(concepts))
+  } catch (error) {
+    console.error("Error al guardar conceptos en localStorage:", error)
+    showModal("Error al guardar los conceptos")
+  }
+}
+
+/**
+ * Valida la entrada del input de concepto
+ */
+function validateConceptInput() {
+  const value = conceptInput.value.trim()
+  const isValid = value.length > 0 && value.length <= 100
+  
+  addConceptBtn.disabled = !isValid
+  
+  // Cambiar estilo del input según validación
+  if (value.length > 0 && !isValid) {
+    conceptInput.style.borderColor = "#dc3545"
+  } else {
+    conceptInput.style.borderColor = value.length > 0 ? "#28a745" : "#e5e5e5"
+  }
+}
+
+/**
+ * Agrega un nuevo concepto
+ */
+function addConcept() {
+  const conceptText = conceptInput.value.trim()
+  
+  if (!conceptText) {
+    conceptInput.focus()
+    return
+  }
+  
+  if (conceptText.length > 100) {
+    showModal("El concepto no puede tener más de 100 caracteres")
+    return
+  }
+  
+  const concepts = getConceptsFromStorage()
+  
+  // Verificar si el concepto ya existe (sin distinguir mayúsculas/minúsculas)
+  const conceptExists = concepts.some(
+    concept => concept.toLowerCase() === conceptText.toLowerCase()
+  )
+  
+  if (conceptExists) {
+    showModal("Este concepto ya existe en la lista")
+    conceptInput.focus()
+    return
+  }
+  
+  // Agregar el nuevo concepto
+  concepts.push(conceptText)
+  saveConceptsToStorage(concepts)
+  
+  // Actualizar la UI
+  loadConceptsFromStorage()
+  updateConceptsCounter()
+  
+  // Limpiar el input
+  conceptInput.value = ""
+  validateConceptInput()
+  conceptInput.focus()
+  
+  showToast()
+}
+
+/**
+ * Elimina un concepto específico
+ * @param {number} index Índice del concepto a eliminar
+ */
+function deleteConcept(index) {
+  const concepts = getConceptsFromStorage()
+  
+  if (index >= 0 && index < concepts.length) {
+    concepts.splice(index, 1)
+    saveConceptsToStorage(concepts)
+    loadConceptsFromStorage()
+    updateConceptsCounter()
+    showToast()
+  }
+}
+
+/**
+ * Edita un concepto específico
+ * @param {number} index Índice del concepto a editar
+ * @param {string} newText Nuevo texto del concepto
+ */
+function editConcept(index, newText) {
+  const conceptText = newText.trim()
+  
+  if (!conceptText) {
+    showModal("El concepto no puede estar vacío")
+    return false
+  }
+  
+  if (conceptText.length > 100) {
+    showModal("El concepto no puede tener más de 100 caracteres")
+    return false
+  }
+  
+  const concepts = getConceptsFromStorage()
+  
+  // Verificar si el concepto ya existe (excluyendo el actual)
+  const conceptExists = concepts.some(
+    (concept, i) => i !== index && concept.toLowerCase() === conceptText.toLowerCase()
+  )
+  
+  if (conceptExists) {
+    showModal("Este concepto ya existe en la lista")
+    return false
+  }
+  
+  if (index >= 0 && index < concepts.length) {
+    concepts[index] = conceptText
+    saveConceptsToStorage(concepts)
+    loadConceptsFromStorage()
+    showToast()
+    return true
+  }
+  
+  return false
+}
+
+/**
+ * Elimina todos los conceptos
+ */
+function clearAllConcepts() {
+  saveConceptsToStorage([])
+  loadConceptsFromStorage()
+  updateConceptsCounter()
+  showToast()
+}
+
+/**
+ * Carga y muestra los conceptos desde el localStorage
+ */
+function loadConceptsFromStorage() {
+  const concepts = getConceptsFromStorage()
+  
+  if (concepts.length === 0) {
+    showEmptyConceptsMessage()
+  } else {
+    renderConceptsList(concepts)
+  }
+}
+
+/**
+ * Muestra el mensaje cuando no hay conceptos
+ */
+function showEmptyConceptsMessage() {
+  conceptsList.innerHTML = `
+    <div class="empty-concepts">
+      <p class="empty-message">No hay conceptos guardados</p>
+      <p class="empty-hint">Agrega tu primer concepto usando el formulario de arriba</p>
+    </div>
+  `
+}
+
+/**
+ * Renderiza la lista de conceptos
+ * @param {Array<string>} concepts Array de conceptos a mostrar
+ */
+function renderConceptsList(concepts) {
+  const conceptsHTML = concepts.map((concept, index) => `
+    <div class="concept-item" data-index="${index}">
+      <span class="concept-text">${escapeHtml(concept)}</span>
+      <div class="concept-actions">
+        <button class="btn-edit-concept" onclick="startEditConcept(${index})">
+          ✏️ Editar
+        </button>
+        <button class="btn-delete-concept" onclick="confirmDeleteConcept(${index})">
+          🗑️ Eliminar
+        </button>
+      </div>
+    </div>
+  `).join("")
+  
+  conceptsList.innerHTML = conceptsHTML
+}
+
+/**
+ * Inicia el modo de edición para un concepto
+ * @param {number} index Índice del concepto a editar
+ */
+function startEditConcept(index) {
+  const concepts = getConceptsFromStorage()
+  const conceptItem = document.querySelector(`[data-index="${index}"]`)
+  
+  if (!conceptItem || index >= concepts.length) return
+  
+  const currentText = concepts[index]
+  
+  conceptItem.innerHTML = `
+    <input type="text" class="edit-concept-input" value="${escapeHtml(currentText)}" maxlength="100">
+    <div class="concept-actions">
+      <button class="btn-save-concept" onclick="saveEditConcept(${index})">
+        ✓ Guardar
+      </button>
+      <button class="btn-cancel-concept" onclick="cancelEditConcept(${index})">
+        ✕ Cancelar
+      </button>
+    </div>
+  `
+  
+  const input = conceptItem.querySelector(".edit-concept-input")
+  input.focus()
+  input.select()
+  
+  // Guardar en Enter
+  input.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      saveEditConcept(index)
+    } else if (e.key === "Escape") {
+      cancelEditConcept(index)
+    }
+  })
+}
+
+/**
+ * Guarda la edición de un concepto
+ * @param {number} index Índice del concepto
+ */
+function saveEditConcept(index) {
+  const conceptItem = document.querySelector(`[data-index="${index}"]`)
+  const input = conceptItem.querySelector(".edit-concept-input")
+  
+  if (input) {
+    const success = editConcept(index, input.value)
+    if (!success) {
+      // Si falló, mantener el modo de edición y enfocar el input
+      input.focus()
+      input.select()
+    }
+  }
+}
+
+/**
+ * Cancela la edición de un concepto
+ * @param {number} index Índice del concepto
+ */
+function cancelEditConcept(index) {
+  loadConceptsFromStorage()
+}
+
+/**
+ * Confirma la eliminación de un concepto
+ * @param {number} index Índice del concepto a eliminar
+ */
+function confirmDeleteConcept(index) {
+  const concepts = getConceptsFromStorage()
+  if (index >= 0 && index < concepts.length) {
+    const conceptText = concepts[index]
+    showConfirmDialog(
+      `¿Estás seguro de que quieres eliminar el concepto "${conceptText}"?`,
+      () => deleteConcept(index)
+    )
+  }
+}
+
+/**
+ * Actualiza el contador de conceptos
+ */
+function updateConceptsCounter() {
+  const concepts = getConceptsFromStorage()
+  conceptsCounter.textContent = concepts.length
+}
+
+/**
+ * Escapa caracteres HTML para prevenir XSS
+ * @param {string} text Texto a escapar
+ * @returns {string} Texto escapado
+ */
+function escapeHtml(text) {
+  const div = document.createElement("div")
+  div.textContent = text
+  return div.innerHTML
+}
+
+/**
+ * Muestra un diálogo de confirmación
+ * @param {string} message Mensaje a mostrar
+ * @param {Function} onConfirm Función a ejecutar si se confirma
+ */
+function showConfirmDialog(message, onConfirm) {
+  const confirmed = window.confirm(message)
+  if (confirmed && typeof onConfirm === "function") {
+    onConfirm()
+  }
+}
+
+/**
+ * Obtiene todos los conceptos como array
+ * @returns {Array<string>} Array de conceptos
+ */
+function getAllConcepts() {
+  return getConceptsFromStorage()
+}
+
+/**
+ * Verifica si existe un concepto específico
+ * @param {string} conceptText Texto del concepto a buscar
+ * @returns {boolean} true si existe, false si no
+ */
+function conceptExists(conceptText) {
+  const concepts = getConceptsFromStorage()
+  return concepts.some(
+    concept => concept.toLowerCase() === conceptText.toLowerCase()
+  )
+}

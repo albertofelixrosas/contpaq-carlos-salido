@@ -23,6 +23,46 @@
             <p class="subtitle">Sube tu archivo y descarga el resultado</p>
         </header>
 
+         <!-- Componente de gestión de conceptos -->
+        <section class="concepts-manager">
+            <h2 class="concepts-title">Gestión de Conceptos</h2>
+            
+            <div class="concepts-controls">
+                <div class="add-concept-form">
+                    <input 
+                        type="text" 
+                        id="conceptInput" 
+                        placeholder="Escribe un nuevo concepto..."
+                        class="concept-input"
+                        maxlength="100"
+                    >
+                    <button type="button" id="addConceptBtn" class="btn-add-concept">
+                        <span class="add-icon">+</span>
+                        Agregar
+                    </button>
+                </div>
+                
+                <div class="concepts-actions">
+                    <button type="button" id="clearAllConceptsBtn" class="btn-clear-all">
+                        <span class="clear-icon">🗑️</span>
+                        Limpiar Todo
+                    </button>
+                    <span class="concepts-count">
+                        Total: <span id="conceptsCounter">0</span> conceptos
+                    </span>
+                </div>
+            </div>
+
+            <div class="concepts-list-container">
+                <div id="conceptsList" class="concepts-list">
+                    <div class="empty-concepts">
+                        <p class="empty-message">No hay conceptos guardados</p>
+                        <p class="empty-hint">Agrega tu primer concepto usando el formulario de arriba</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
          <!-- Componente de edición de segmentos -->
         <section id="segmentEditor" class="segment-editor hidden">
             <h2 class="segment-title">Editar Segmentos</h2>
