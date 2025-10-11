@@ -43,6 +43,8 @@ const skipRecordBtn = document.querySelector("#skipRecord")
 // Variables del carrusel
 let currentRecordIndex = 0
 let apkDataArray = []
+// TODO: aplicar cambios similares a ggDataArray
+let ggDataArray = []
 
 // ========================================
 // EVENTOS
@@ -287,7 +289,7 @@ async function generateResultsTableForGG() {
   const thead = document.createElement("thead")
   const headerRow = document.createElement("tr")
 
-  const headers = ["Fecha", "Egresos", "Folio", "Proveedor", "Factura", "Importe", "Concepto", "Vuelta", "Mes", "Año"]
+  const headers = ["Fecha", "Egresos", "Folio", "Proveedor", "Factura", "Importe", "Concepto", "Segmento", "Mes", "Año"]
   headers.forEach((header) => {
     const th = document.createElement("th")
     th.textContent = header
@@ -402,70 +404,78 @@ function generateTableBodyForAPK(data) {
 function generateTableBodyForGG(data) {
   const tbody = document.createElement("tbody")
 
+  // Borrar ggData de localStorage
+  localStorage.removeItem('ggData')
+
+  // Aquí va la lógica para procesar los datos y llenar las filas de la tabla
+
   // Variables para mantener el estado actual de los valores del segmento y cuenta contable
   let currentAccountName = ""
-  const accounts = []
+  let currentSegmentName = ""
+  const segmentNames = new Set()
+  const ggData = []
   // Se lee las filas de principio a fin
   for (let i = 1; i < data.length; i++) {
     // Se obtiene la fila actual
     const row = data[i]
     // Se obtiene el valor de la primera columna
     const firstCell = String(row?.[0] || '').trim()
-    const fifthCell = String(row?.[4] || '').trim()
-    const sixthCell = String(row?.[5] || '').trim()
 
     // Se identifica el tipo de fila según el valor de la primera columna
 
-    // 133-001-000-000-00	SUELDOS Y SALARIOS
+    // 133-000-000-000-00	PRODUCCION DE CERDOS EN PROCESO
     // 1️⃣ Si la primera celda es un codigo de cuenta contable
     if (firstCell.match(accountNumberRegex)) {
       // La segunda celda es el nombre de la cuenta contable, y se guarda en la variable de estado
       currentAccountName = String(row?.[1] || '').trim()
     }
-    // 2️⃣ Si la cuarta celda comienza con "Total" y la quinta celda es un número que representa el total
-    if (fifthCell.endsWith(currentAccountName + ':') && !isNaN(parseFloat(sixthCell.replace(/,/g, '')))) {
-      // Se guarda el nombre de la cuenta contable en el array de cuentas
-      accounts.push({
-        account: currentAccountName,
-        total: parseFloat(sixthCell.replace(/,/g, '')),
+    // Segmento:  100 GG
+    // 2️⃣ Si la primera celda empieza con "segmento"
+    if (firstCell.toLowerCase().startsWith('segmento')) {
+      // El nombre del segmento se encuentra despues de "Segmento:  " en esa misma celda
+      currentSegmentName = firstCell.split(' ').filter((_, index) => index > 2).join(' ').trim()
+    }
+    // 3️⃣ Si la primera celda es una fecha común de Excel
+    if (firstCell.match(excelCommonDateRegex)) {
+      // Se crea un objeto con los datos de la fila
+      const rowObject = createObjectFromRow(row)
+
+      // Quiero convertir el objeto a un nuevo objeto que incluya los valores actuales de segmento y cuenta contable
+      // FECHA	EGRESOS	FOLIO	PROVEEDOR	FACTURA	 IMPORTE 	CONCEPTO	VUELTA	MES	AÑO
+
+      const { monthString, year } = parseDateString(rowObject.fecha)
+
+      const newRowObject = {
+        fecha: rowObject.fecha,
+        egresos: rowObject.tipo,
+        folio: rowObject.numero,
+        proveedor: rowObject.concepto,
+        factura: rowObject.ref,
+        importe: rowObject.cargos,
+        concepto: currentAccountName,
+        vuelta: currentSegmentName,
+        mes: monthString,
+        año: year,
+      }
+
+      ggData.push(newRowObject)
+
+      // Se crea una nueva fila en la tabla
+      const tr = document.createElement("tr")
+      // Se agregan las celdas a la fila
+      Object.values(newRowObject).forEach((value) => {
+        const td = document.createElement("td")
+        td.textContent = value
+        tr.appendChild(td)
+        segmentNames.add(newRowObject.vuelta)
       })
-    }
-
-  }
-
-    /*
-    EQ. TRANSPORTE
-    GASOLINA
-    SUELDOS GJAS
-    SUELDOS ADMON
-  */
-
-  // TODO: Procesar las cuentas para obtener los totales necesarios
-  // para continuar con la distribución del gasto
-  // y la creación de las filas de la tabla final de GG's
-
-  /*
-  MANTO.EQUIPO TRANSPORTE
-  GASOLINA o 10.GASOLINA VARIOS
-  SUELDOS Y SALARIOS
-  */
-
-  let totalGjas = 0
-  const finalAccounts = []
-  for (const account of accounts) {
-    if (account.account === 'EQ. TRANSPORTE') {
-
-    } else if (account.account === 'GASOLINA') {
-
-    } else if (account.account === 'SUELDOS GJAS') {
-
-    } else if (account.account === 'SUELDOS ADMON') {
-
+      // Se agrega la fila al cuerpo de la tabla
+      tbody.appendChild(tr)
     }
   }
 
 
-  console.log(accounts);
+  localStorage.setItem('ggData', JSON.stringify(ggData))
 
   // Se agrega el cuerpo a la tabla
   resultTable.appendChild(tbody)
@@ -1061,16 +1071,46 @@ function conceptExists(conceptText) {
 // ========================================
 
 /**
- * Abre el carrusel de verificación de datos APK
+ * Abre el carrusel de verificación de datos (APK o GG)
  */
 function openVerifyCarousel() {
-  // Obtener datos de APK del localStorage
-  apkDataArray = getApkDataFromStorage()
+  // Determinar qué tipo de datos usar basándose en el radio button seleccionado
+  const selectedOption = document.querySelector('input[name="step"]:checked').value
   
-  if (apkDataArray.length === 0) {
-    showModal("No hay datos APK para verificar. Procesa primero un archivo.")
+  let currentDataArray = []
+  let dataType = ""
+  
+  if (selectedOption === "apk") {
+    // Usuario seleccionó APK
+    apkDataArray = getApkDataFromStorage()
+    
+    if (apkDataArray.length === 0) {
+      showModal("No hay datos APK para verificar. Procesa primero un archivo APK.")
+      return
+    }
+    
+    currentDataArray = apkDataArray
+    dataType = "APK"
+  } else if (selectedOption === "gg") {
+    // Usuario seleccionó GG
+    ggDataArray = getGgDataFromStorage()
+    
+    if (ggDataArray.length === 0) {
+      showModal("No hay datos GG para verificar. Procesa primero un archivo GG.")
+      return
+    }
+    
+    // Para GG usamos ggDataArray como referencia principal
+    apkDataArray = ggDataArray
+    currentDataArray = ggDataArray
+    dataType = "GG"
+  } else {
+    showModal("Selecciona el tipo de datos a verificar (APK o GG).")
     return
   }
+  
+  // Actualizar el título del carrusel según el tipo de datos
+  updateCarouselTitle(dataType)
   
   // Inicializar el carrusel
   currentRecordIndex = 0
@@ -1118,6 +1158,43 @@ function saveApkDataToStorage(data) {
 }
 
 /**
+ * Obtiene los datos GG del localStorage
+ * @returns {Array<Object>} Array de objetos GG
+ */
+function getGgDataFromStorage() {
+  try {
+    return JSON.parse(localStorage.getItem("ggData")) || []
+  } catch (error) {
+    console.error("Error al leer datos GG del localStorage:", error)
+    return []
+  }
+}
+
+/**
+ * Guarda los datos GG en el localStorage
+ * @param {Array<Object>} data Array de objetos GG a guardar
+ */
+function saveGgDataToStorage(data) {
+  try {
+    localStorage.setItem("ggData", JSON.stringify(data))
+  } catch (error) {
+    console.error("Error al guardar datos GG en localStorage:", error)
+    showModal("Error al guardar los datos")
+  }
+}
+
+/**
+ * Actualiza el título del carrusel según el tipo de datos
+ * @param {string} dataType Tipo de datos ("APK" o "GG")
+ */
+function updateCarouselTitle(dataType) {
+  const carouselTitle = document.querySelector(".carousel-title")
+  if (carouselTitle) {
+    carouselTitle.textContent = `Verificar Datos ${dataType}`
+  }
+}
+
+/**
  * Popula el selector de conceptos con los conceptos disponibles
  */
 function populateConceptSelector() {
@@ -1139,8 +1216,19 @@ function populateConceptSelector() {
     conceptSelect.appendChild(option)
   })
   
-  // Actualizar totales
-  totalRecordsSpan.textContent = apkDataArray.length
+  // Actualizar totales basándose en el radio button seleccionado
+  const selectedOption = document.querySelector('input[name="step"]:checked').value
+  let totalRecords = 0
+  
+  if (selectedOption === "apk") {
+    const apkData = getApkDataFromStorage()
+    totalRecords = apkData.length
+  } else if (selectedOption === "gg") {
+    const ggData = getGgDataFromStorage()
+    totalRecords = ggData.length
+  }
+  
+  totalRecordsSpan.textContent = totalRecords
 }
 
 /**
@@ -1152,6 +1240,16 @@ function displayCurrentRecord() {
   }
   
   const record = apkDataArray[currentRecordIndex]
+  
+  // Determinar si estamos trabajando con datos GG basándose en el radio button seleccionado
+  const selectedOption = document.querySelector('input[name="step"]:checked').value
+  const isGGData = selectedOption === "gg"
+  
+  // Actualizar la etiqueta de "Vuelta"/"Segmento" según el tipo de datos
+  const vueltaLabel = document.querySelector('.data-row:last-child .data-label')
+  if (vueltaLabel) {
+    vueltaLabel.textContent = isGGData ? "Segmento:" : "Vuelta:"
+  }
   
   // Actualizar información del registro
   currentIndexSpan.textContent = currentRecordIndex + 1
@@ -1220,8 +1318,16 @@ function changeRecordConcept() {
   // Actualizar el concepto en el array directamente
   apkDataArray[currentRecordIndex].concepto = selectedConcept
   
-  // Guardar en localStorage
-  saveApkDataToStorage(apkDataArray)
+  // Determinar qué tipo de datos estamos manejando basándose en el radio button seleccionado
+  const selectedOption = document.querySelector('input[name="step"]:checked').value
+  
+  if (selectedOption === "apk") {
+    // Estamos trabajando con datos APK
+    saveApkDataToStorage(apkDataArray)
+  } else if (selectedOption === "gg") {
+    // Estamos trabajando con datos GG
+    saveGgDataToStorage(apkDataArray) // apkDataArray contiene los datos GG en este contexto
+  }
   
   // Actualizar la tabla si está visible
   updateTableAfterConceptChange()
@@ -1248,11 +1354,16 @@ function updateTableAfterConceptChange() {
     const tbody = resultTable.querySelector("tbody")
     tbody.innerHTML = ""
     
+    // Determinar qué datos usar para actualizar basándose en el radio button seleccionado
+    const selectedOption = document.querySelector('input[name="step"]:checked').value
+    const isGGData = selectedOption === "gg"
+    
     // Recrear las filas con los datos actualizados
     apkDataArray.forEach(record => {
       const tr = document.createElement("tr")
       
       // Crear celdas en el orden correcto
+      // Para GG, el header "Vuelta" se llama "Segmento" pero los datos son iguales
       const values = [
         record.fecha,
         record.egresos,
@@ -1261,7 +1372,7 @@ function updateTableAfterConceptChange() {
         record.factura,
         record.importe,
         record.concepto, // Este es el campo que pudo haber cambiado
-        record.vuelta,
+        record.vuelta,   // En GG esto se muestra como "Segmento"
         record.mes,
         record.año
       ]
