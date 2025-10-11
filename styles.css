@@ -257,6 +257,7 @@ body {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-family: "Poppins", sans-serif;
 }
 
 .btn-edit-concept {
