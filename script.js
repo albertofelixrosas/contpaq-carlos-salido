@@ -226,12 +226,16 @@ async function generateResultsTableForGG() {
 function generateTableBodyForAPK(data) {
   const tbody = document.createElement("tbody")
 
+  // Borrar apkData de localStorage
+  localStorage.removeItem('apkData')
+
   // Aquí va la lógica para procesar los datos y llenar las filas de la tabla
 
   // Variables para mantener el estado actual de los valores del segmento y cuenta contable
   let currentAccountName = ""
   let currentSegmentName = ""
   const segmentNames = new Set()
+  const apkData = []
   // Se lee las filas de principio a fin
   for (let i = 1; i < data.length; i++) {
     // Se obtiene la fila actual
@@ -276,6 +280,8 @@ function generateTableBodyForAPK(data) {
         año: year,
       }
 
+      apkData.push(newRowObject)
+
       // Se crea una nueva fila en la tabla
       const tr = document.createElement("tr")
       // Se agregan las celdas a la fila
@@ -300,6 +306,8 @@ function generateTableBodyForAPK(data) {
 
   localStorage.setItem('segmentList', JSON.stringify(segmentList))
   updateSegmentEditorVisibility()
+
+  localStorage.setItem('apkData', JSON.stringify(apkData))
 
   // Se agrega el cuerpo a la tabla
   resultTable.appendChild(tbody)
