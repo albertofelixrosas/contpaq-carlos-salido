@@ -320,7 +320,12 @@ clearFiltersBtn.addEventListener('click', () => {
  * @param {string} message - Mensaje a mostrar en el modal
  */
 function showModal(message) {
-  modalMessage.textContent = message
+  // Detectar si el mensaje contiene HTML
+  if (message.includes('<') && message.includes('>')) {
+    modalMessage.innerHTML = message
+  } else {
+    modalMessage.textContent = message
+  }
   modal.classList.remove("hidden")
 }
 
