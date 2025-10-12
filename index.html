@@ -191,6 +191,66 @@
             </form>
         </section>
 
+         <!-- Componente de Prorrateo -->
+        <section id="prorrateoSection" class="prorrateo-section hidden">
+            <h2 class="prorrateo-title collapsible-header">
+                <span class="title-text">Prorrateo de Gastos Generales</span>
+                <span class="collapse-indicator">▼</span>
+            </h2>
+            
+            <div class="prorrateo-content collapsible-content">
+                <div class="prorrateo-info">
+                    <span id="prorrateoDescription" class="prorrateo-description">Distribución proporcional de gastos entre vueltas</span>
+                </div>
+                
+                <!-- Acciones del prorrateo -->
+                <div class="prorrateo-actions-section">
+                    <div id="prorrateoActions" class="prorrateo-actions">
+                        <button id="generateProrrateoBtn" class="btn-generate">🔄 Generar Prorrateo</button>
+                        <button id="copyProrrateoBtn" class="btn-copy">📋 Copiar</button>
+                        <button id="downloadProrrateoBtn" class="btn-download">💾 Descargar</button>
+                    </div>
+                </div>
+                
+                <!-- Información del prorrateo -->
+                <div class="prorrateo-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Conceptos GG:</span>
+                        <span id="conceptsCount" class="summary-value">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Vueltas:</span>
+                        <span id="vueltasCount" class="summary-value">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Total Cerdos:</span>
+                        <span id="totalCerdos" class="summary-value">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Registros Generados:</span>
+                        <span id="registrosGenerados" class="summary-value">0</span>
+                    </div>
+                </div>
+                
+                <div class="prorrateo-table-container">
+                <!-- Estado vacío -->
+                <div id="emptyProrrateoState" class="empty-prorrateo-state">
+                    <div class="empty-prorrateo-icon">📊</div>
+                    <h3 class="empty-prorrateo-title">No hay datos de prorrateo generados</h3>
+                    <p class="empty-prorrateo-message">Presiona "Generar Prorrateo" para crear la distribución de gastos</p>
+                    <div class="empty-prorrateo-hint">
+                        <small>Requiere datos APK, GG y configuración de segmentos</small>
+                    </div>
+                </div>
+                
+                <!-- Tabla de prorrateo -->
+                <table id="prorrateoTable" class="prorrateo-table hidden">
+                     <!-- La tabla se llenará dinámicamente con JavaScript  -->
+                </table>
+                </div>
+            </div>
+        </section>
+
          <!-- Sección de tabla (siempre visible)  -->
         <section id="tableSection" class="table-section">
             <div class="table-header">
@@ -354,6 +414,11 @@
                         <small>Procesamiento de GG</small>
                     </span>
                 </label>
+            </div>
+            <div class="data-type-actions">
+                <button id="confirmProrrateoBtn" class="btn-confirm-prorrateo" type="button" disabled>
+                    ✓ Confirmar Prorrateo
+                </button>
             </div>
         </div>
     </div>

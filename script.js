@@ -77,6 +77,19 @@ const vueltaFilter = document.querySelector("#vueltaFilter")
 const vueltaFilterContainer = document.querySelector("#vueltaFilterContainer")
 const filterResultsCount = document.querySelector("#filterResultsCount")
 
+// Elementos del componente de prorrateo
+const confirmProrrateoBtn = document.querySelector("#confirmProrrateoBtn")
+const prorrateoSection = document.querySelector("#prorrateoSection")
+const generateProrrateoBtn = document.querySelector("#generateProrrateoBtn")
+const copyProrrateoBtn = document.querySelector("#copyProrrateoBtn")
+const downloadProrrateoBtn = document.querySelector("#downloadProrrateoBtn")
+const prorrateoTable = document.querySelector("#prorrateoTable")
+const emptyProrrateoState = document.querySelector("#emptyProrrateoState")
+const conceptsCount = document.querySelector("#conceptsCount")
+const vueltasCount = document.querySelector("#vueltasCount")
+const totalCerdos = document.querySelector("#totalCerdos")
+const registrosGenerados = document.querySelector("#registrosGenerados")
+
 // ========================================
 // EVENTOS
 // ========================================
@@ -168,6 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeTableDisplay()
   initializeCollapsibleComponents()
   restoreCollapseStates()
+  updateConfirmProrrateoButton()
 })
 
 // Eventos del componente de conceptos
@@ -311,6 +325,23 @@ vueltaFilter.addEventListener('change', () => {
 
 clearFiltersBtn.addEventListener('click', () => {
   clearAllTableFilters()
+})
+
+// Eventos del componente de prorrateo
+confirmProrrateoBtn.addEventListener('click', () => {
+  showProrrateoSection()
+})
+
+generateProrrateoBtn.addEventListener('click', () => {
+  generateProrrateoData()
+})
+
+copyProrrateoBtn.addEventListener('click', () => {
+  copyProrrateoToClipboard()
+})
+
+downloadProrrateoBtn.addEventListener('click', () => {
+  downloadProrrateoAsExcel()
 })
 
 // ========================================
@@ -563,10 +594,12 @@ async function processExcelAndGenerateTable(file, dataType, tableElement) {
       // Guardar en localStorage
       saveApkDataToLocalStorage(processedResult.processedData, processedResult.segmentNames)
       updateSegmentEditorVisibility()
+      updateConfirmProrrateoButton()
     } else if (dataType === "gg") {
       processedResult = processGgDataFromExcel(rawData)
       // Guardar en localStorage
       saveGgDataToLocalStorage(processedResult.processedData)
+      updateConfirmProrrateoButton()
     } else {
       throw new Error(`Tipo de datos no soportado: ${dataType}`)
     }
@@ -1121,6 +1154,7 @@ function updateSegmentData() {
   localStorage.setItem("segmentList", JSON.stringify(updatedSegmentList))
   showToast("Segmentos actualizados correctamente")
   populateSegmentForm()
+  updateConfirmProrrateoButton()
 }
 
 // Evento: Envío del formulario de segmentos
@@ -2857,6 +2891,14 @@ function initializeCollapsibleComponents() {
       toggleComponent('mass-replacement-manager')
     })
   }
+  
+  // Prorrateo de Gastos Generales
+  const prorrateoHeader = document.querySelector('.prorrateo-section .collapsible-header')
+  if (prorrateoHeader) {
+    prorrateoHeader.addEventListener('click', () => {
+      toggleProrrateoComponent()
+    })
+  }
 }
 
 /**
@@ -2955,6 +2997,31 @@ function loadCollapseState(componentId) {
 }
 
 /**
+ * Alterna el estado de colapso del componente de prorrateo
+ */
+function toggleProrrateoComponent() {
+  const prorrateoSection = document.querySelector('.prorrateo-section')
+  const content = prorrateoSection.querySelector('.prorrateo-content')
+  const indicator = prorrateoSection.querySelector('.collapse-indicator')
+  
+  if (!content || !indicator) return
+  
+  const isCollapsed = content.classList.contains('collapsed')
+  
+  if (isCollapsed) {
+    // Expandir
+    content.classList.remove('collapsed')
+    indicator.textContent = '▼'
+    saveCollapseState('prorrateo-section', false)
+  } else {
+    // Colapsar
+    content.classList.add('collapsed')
+    indicator.textContent = '▶'
+    saveCollapseState('prorrateo-section', true)
+  }
+}
+
+/**
  * Restaura los estados de colapso guardados
  */
 function restoreCollapseStates() {
@@ -2972,5 +3039,342 @@ function restoreCollapseStates() {
     if (component) {
       component.classList.add('collapsed')
     }
+  }
+  
+  // Prorrateo de Gastos Generales
+  if (loadCollapseState('prorrateo-section')) {
+    const content = document.querySelector('.prorrateo-section .prorrateo-content')
+    const indicator = document.querySelector('.prorrateo-section .collapse-indicator')
+    if (content && indicator) {
+      content.classList.add('collapsed')
+      indicator.textContent = '▶'
+    }
+  }
+}
+
+// ========================================
+// FUNCIONALIDAD DE PRORRATEO
+// ========================================
+
+/**
+ * Actualiza el estado del botón de confirmación de prorrateo
+ */
+function updateConfirmProrrateoButton() {
+  if (!confirmProrrateoBtn) return
+  
+  // Verificar si existen todos los datos necesarios
+  const hasApkData = localStorage.getItem('apkData') && JSON.parse(localStorage.getItem('apkData')).length > 0
+  const hasGgData = localStorage.getItem('ggData') && JSON.parse(localStorage.getItem('ggData')).length > 0
+  const hasSegmentList = localStorage.getItem('segmentList') && JSON.parse(localStorage.getItem('segmentList')).length > 0
+  
+  const allDataAvailable = hasApkData && hasGgData && hasSegmentList
+  
+  confirmProrrateoBtn.disabled = !allDataAvailable
+  
+  if (allDataAvailable) {
+    confirmProrrateoBtn.textContent = '✓ Confirmar Prorrateo'
+    confirmProrrateoBtn.title = 'Todos los datos están listos para el prorrateo'
+  } else {
+    confirmProrrateoBtn.textContent = '⚠ Datos Incompletos'
+    const missing = []
+    if (!hasApkData) missing.push('APK')
+    if (!hasGgData) missing.push('GG')
+    if (!hasSegmentList) missing.push('Segmentos')
+    confirmProrrateoBtn.title = `Faltan datos: ${missing.join(', ')}`
+  }
+}
+
+/**
+ * Muestra la sección de prorrateo
+ */
+function showProrrateoSection() {
+  if (!prorrateoSection) return
+  
+  // Verificar nuevamente que todos los datos estén disponibles
+  if (confirmProrrateoBtn.disabled) {
+    showModal('No se pueden generar los datos de prorrateo. Verifica que tengas datos APK, GG y configuración de segmentos.')
+    return
+  }
+  
+  // Mostrar la sección
+  prorrateoSection.classList.remove('hidden')
+  
+  // Actualizar información del resumen
+  updateProrrateoSummary()
+  
+  // Scroll hacia la sección
+  prorrateoSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+/**
+ * Actualiza el resumen de información del prorrateo
+ */
+function updateProrrateoSummary() {
+  try {
+    // Obtener datos de GG únicos por concepto
+    const ggData = JSON.parse(localStorage.getItem('ggData') || '[]')
+    const uniqueConcepts = [...new Set(ggData.map(record => record.concepto).filter(Boolean))]
+    
+    // Obtener datos de segmentos
+    const segmentList = JSON.parse(localStorage.getItem('segmentList') || '[]')
+    const totalCerdosValue = segmentList.reduce((sum, segment) => sum + (segment.count || 0), 0)
+    
+    // Actualizar elementos del resumen
+    if (conceptsCount) conceptsCount.textContent = uniqueConcepts.length
+    if (vueltasCount) vueltasCount.textContent = segmentList.length
+    if (totalCerdos) totalCerdos.textContent = totalCerdosValue.toLocaleString()
+    if (registrosGenerados) registrosGenerados.textContent = uniqueConcepts.length * segmentList.length
+    
+  } catch (error) {
+    console.error('Error actualizando resumen de prorrateo:', error)
+  }
+}
+
+/**
+ * Genera los datos de prorrateo
+ */
+function generateProrrateoData() {
+  try {
+    // Obtener datos necesarios
+    const ggData = JSON.parse(localStorage.getItem('ggData') || '[]')
+    const segmentList = JSON.parse(localStorage.getItem('segmentList') || '[]')
+    
+    if (ggData.length === 0 || segmentList.length === 0) {
+      showModal('No hay datos suficientes para generar el prorrateo.')
+      return
+    }
+    
+    // Calcular totales por concepto
+    const conceptTotals = new Map()
+    ggData.forEach(record => {
+      const concepto = record.concepto
+      const importe = parseFloat(record.importe) || 0
+      
+      if (concepto && importe > 0) {
+        conceptTotals.set(concepto, (conceptTotals.get(concepto) || 0) + importe)
+      }
+    })
+    
+    // Calcular total de cerdos
+    const totalCerdosValue = segmentList.reduce((sum, segment) => sum + (segment.count || 0), 0)
+    
+    if (totalCerdosValue === 0) {
+      showModal('El total de cerdos no puede ser 0. Verifica la configuración de segmentos.')
+      return
+    }
+    
+    // Generar registros de prorrateo
+    const prorrateoRecords = []
+    let recordId = 1
+    
+    // Obtener fecha (último día del mes anterior)
+    const currentDate = new Date()
+    // Cambiar prevMonth por currentMonth
+    const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0)
+    const fechaProrrateo = formatDateForProrrateo(currentMonth)
+    const { monthString, year } = parseDateForProrrateo(currentMonth)
+
+    // Generar registros para cada combinación concepto-vuelta
+    conceptTotals.forEach((totalImporte, concepto) => {
+      segmentList.forEach(segment => {
+        const porcentaje = segment.count / totalCerdosValue
+        const importeProrrateo = totalImporte * porcentaje
+        
+        const record = {
+          id: recordId++,
+          fecha: fechaProrrateo,
+          egresos: '',
+          folio: '',
+          proveedor: `${concepto} (prorrateo)`,
+          factura: '',
+          importe: Math.round(importeProrrateo * 100) / 100, // Redondear a 2 decimales
+          concepto: concepto,
+          vuelta: segment.segment,
+          mes: monthString,
+          año: year
+        }
+        
+        prorrateoRecords.push(record)
+      })
+    })
+    
+    // Guardar datos de prorrateo en localStorage
+    localStorage.setItem('prorrateoData', JSON.stringify(prorrateoRecords))
+    
+    // Generar tabla
+    generateProrrateoTable(prorrateoRecords)
+    
+    // Actualizar resumen
+    if (registrosGenerados) registrosGenerados.textContent = prorrateoRecords.length
+    
+    showToast(`¡Prorrateo generado! ${prorrateoRecords.length} registros creados.`)
+    
+  } catch (error) {
+    console.error('Error generando prorrateo:', error)
+    showModal('Error al generar el prorrateo. Verifica que todos los datos sean válidos.')
+  }
+}
+
+/**
+ * Formatea una fecha para el prorrateo en formato DD/Mmm/YYYY
+ * @param {Date} date - Fecha a formatear
+ * @returns {string} - Fecha formateada
+ */
+function formatDateForProrrateo(date) {
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = months[date.getMonth()]
+  const year = date.getFullYear()
+  
+  return `${day}/${month}/${year}`
+}
+
+/**
+ * Parsea una fecha para extraer mes y año
+ * @param {Date} date - Fecha a parsear
+ * @returns {Object} - Objeto con monthString y year
+ */
+function parseDateForProrrateo(date) {
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+  return {
+    monthString: months[date.getMonth()],
+    year: date.getFullYear()
+  }
+}
+
+/**
+ * Genera la tabla de prorrateo
+ * @param {Array} prorrateoRecords - Datos del prorrateo
+ */
+function generateProrrateoTable(prorrateoRecords) {
+  if (!prorrateoTable) return
+  
+  // Ocultar estado vacío y mostrar tabla
+  emptyProrrateoState.classList.add('hidden')
+  prorrateoTable.classList.remove('hidden')
+  
+  // Limpiar tabla
+  prorrateoTable.innerHTML = ''
+  
+  // Crear encabezados (misma estructura que APK)
+  const headers = ['ID', 'Fecha', 'Egresos', 'Folio', 'Proveedor', 'Factura', 'Importe', 'Concepto', 'Vuelta', 'Mes', 'Año']
+  
+  const thead = document.createElement('thead')
+  const headerRow = document.createElement('tr')
+  
+  headers.forEach(header => {
+    const th = document.createElement('th')
+    th.textContent = header
+    headerRow.appendChild(th)
+  })
+  
+  thead.appendChild(headerRow)
+  prorrateoTable.appendChild(thead)
+  
+  // Crear cuerpo de tabla
+  const tbody = document.createElement('tbody')
+  
+  prorrateoRecords.forEach(record => {
+    const tr = document.createElement('tr')
+    
+    // Crear celdas en el orden de los headers
+    const values = [
+      record.id,
+      record.fecha,
+      record.egresos,
+      record.folio,
+      record.proveedor,
+      record.factura,
+      record.importe,
+      record.concepto,
+      record.vuelta,
+      record.mes,
+      record.año
+    ]
+    
+    values.forEach(value => {
+      const td = document.createElement('td')
+      td.textContent = value !== null && value !== undefined ? String(value) : ''
+      tr.appendChild(td)
+    })
+    
+    tbody.appendChild(tr)
+  })
+  
+  prorrateoTable.appendChild(tbody)
+}
+
+/**
+ * Copia los datos de prorrateo al portapapeles
+ */
+function copyProrrateoToClipboard() {
+  if (!prorrateoTable || prorrateoTable.classList.contains('hidden')) {
+    showModal('No hay datos de prorrateo para copiar. Genera primero los datos.')
+    return
+  }
+  
+  const rows = prorrateoTable.querySelectorAll('tr')
+  if (rows.length === 0) {
+    showModal('La tabla de prorrateo está vacía.')
+    return
+  }
+  
+  let tableText = ''
+  
+  rows.forEach((row, index) => {
+    const cells = row.querySelectorAll('th, td')
+    const rowData = Array.from(cells)
+      .map(cell => cell.textContent)
+      .join('\t')
+    tableText += rowData
+    
+    if (index < rows.length - 1) {
+      tableText += '\n'
+    }
+  })
+  
+  navigator.clipboard
+    .writeText(tableText)
+    .then(() => {
+      showToast('¡Datos de prorrateo copiados al portapapeles!')
+    })
+    .catch(err => {
+      console.error('Error al copiar:', err)
+      showModal('Error al copiar los datos al portapapeles.')
+    })
+}
+
+/**
+ * Descarga los datos de prorrateo como archivo Excel
+ */
+function downloadProrrateoAsExcel() {
+  const prorrateoData = localStorage.getItem('prorrateoData')
+  
+  if (!prorrateoData) {
+    showModal('No hay datos de prorrateo para descargar. Genera primero los datos.')
+    return
+  }
+  
+  try {
+    const data = JSON.parse(prorrateoData)
+    
+    // Crear workbook
+    const wb = XLSX.utils.book_new()
+    
+    // Convertir datos a formato de hoja
+    const ws = XLSX.utils.json_to_sheet(data)
+    
+    // Agregar hoja al workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Prorrateo')
+    
+    // Descargar archivo
+    const fileName = `prorrateo_${new Date().toISOString().split('T')[0]}.xlsx`
+    XLSX.writeFile(wb, fileName)
+    
+    showToast('¡Archivo de prorrateo descargado correctamente!')
+    
+  } catch (error) {
+    console.error('Error descargando archivo:', error)
+    showModal('Error al generar el archivo de descarga.')
   }
 }
