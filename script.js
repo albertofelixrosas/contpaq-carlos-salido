@@ -166,6 +166,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initializeConceptsManager()
   updateMassReplacementVisibility()
   initializeTableDisplay()
+  initializeCollapsibleComponents()
+  restoreCollapseStates()
 })
 
 // Eventos del componente de conceptos
@@ -2830,4 +2832,145 @@ function showEmptyTableState() {
 function initializeTableDisplay() {
   // La tabla siempre está visible, solo actualizamos su contenido
   updateTableDisplay()
+}
+
+// ========================================
+// FUNCIONALIDAD DE COLAPSO DE COMPONENTES
+// ========================================
+
+/**
+ * Inicializa la funcionalidad de colapso para los componentes
+ */
+function initializeCollapsibleComponents() {
+  // Gestión de Conceptos
+  const conceptsHeader = document.querySelector('.concepts-manager .collapsible-header')
+  if (conceptsHeader) {
+    conceptsHeader.addEventListener('click', () => {
+      toggleComponent('concepts-manager')
+    })
+  }
+  
+  // Sustitución Masiva de Conceptos
+  const massReplacementHeader = document.querySelector('.mass-replacement-manager .collapsible-header')
+  if (massReplacementHeader) {
+    massReplacementHeader.addEventListener('click', () => {
+      toggleComponent('mass-replacement-manager')
+    })
+  }
+}
+
+/**
+ * Alterna el estado de colapso de un componente
+ * @param {string} componentClass - Clase del componente a alternar
+ */
+function toggleComponent(componentClass) {
+  const component = document.querySelector(`.${componentClass}`)
+  if (!component) return
+  
+  const isCollapsed = component.classList.contains('collapsed')
+  
+  if (isCollapsed) {
+    expandComponent(component)
+  } else {
+    collapseComponent(component)
+  }
+}
+
+/**
+ * Colapsa un componente
+ * @param {HTMLElement} component - Elemento del componente
+ */
+function collapseComponent(component) {
+  const content = component.querySelector('.collapsible-content')
+  if (!content) return
+  
+  // Obtener altura actual del contenido
+  const currentHeight = content.scrollHeight
+  
+  // Establecer altura actual temporalmente
+  content.style.maxHeight = currentHeight + 'px'
+  
+  // Forzar repaint
+  content.offsetHeight
+  
+  // Agregar clase collapsed
+  component.classList.add('collapsed')
+  
+  // Animar a altura 0
+  requestAnimationFrame(() => {
+    content.style.maxHeight = '0'
+  })
+  
+  // Guardar estado
+  const componentClass = component.classList[0]
+  saveCollapseState(componentClass, true)
+}
+
+/**
+ * Expande un componente
+ * @param {HTMLElement} component - Elemento del componente
+ */
+function expandComponent(component) {
+  const content = component.querySelector('.collapsible-content')
+  if (!content) return
+  
+  // Remover clase collapsed
+  component.classList.remove('collapsed')
+  
+  // Obtener altura natural del contenido
+  const naturalHeight = content.scrollHeight
+  
+  // Establecer altura máxima para la animación
+  content.style.maxHeight = naturalHeight + 'px'
+  
+  // Después de la animación, remover la altura fija
+  setTimeout(() => {
+    content.style.maxHeight = 'none'
+  }, 300)
+  
+  // Guardar estado
+  const componentClass = component.classList[0]
+  saveCollapseState(componentClass, false)
+}
+
+/**
+ * Guarda el estado de colapso en localStorage
+ * @param {string} componentId - ID del componente
+ * @param {boolean} isCollapsed - Si está colapsado
+ */
+function saveCollapseState(componentId, isCollapsed) {
+  const states = JSON.parse(localStorage.getItem('componentCollapseStates') || '{}')
+  states[componentId] = isCollapsed
+  localStorage.setItem('componentCollapseStates', JSON.stringify(states))
+}
+
+/**
+ * Carga el estado de colapso desde localStorage
+ * @param {string} componentId - ID del componente
+ * @returns {boolean} - Estado de colapso
+ */
+function loadCollapseState(componentId) {
+  const states = JSON.parse(localStorage.getItem('componentCollapseStates') || '{}')
+  return states[componentId] || false
+}
+
+/**
+ * Restaura los estados de colapso guardados
+ */
+function restoreCollapseStates() {
+  // Gestión de Conceptos
+  if (loadCollapseState('concepts-manager')) {
+    const component = document.querySelector('.concepts-manager')
+    if (component) {
+      component.classList.add('collapsed')
+    }
+  }
+  
+  // Sustitución Masiva
+  if (loadCollapseState('mass-replacement-manager')) {
+    const component = document.querySelector('.mass-replacement-manager')
+    if (component) {
+      component.classList.add('collapsed')
+    }
+  }
 }

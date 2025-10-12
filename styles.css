@@ -1889,3 +1889,70 @@ body {
   background-color: #e0a800;
   transform: translateY(-1px);
 }
+
+/* ========================================
+   COMPONENTES COLAPSABLES
+   ======================================== */
+
+.collapsible-header {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  transition: all 0.3s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.collapsible-header:hover {
+  color: #3a86ff;
+  border-bottom-color: #3a86ff;
+}
+
+.collapsible-header .title-text {
+  flex: 1;
+}
+
+.collapse-indicator {
+  font-size: 0.8em;
+  transition: transform 0.3s ease;
+  color: #666;
+  font-weight: normal;
+}
+
+.collapsible-header:hover .collapse-indicator {
+  color: #3a86ff;
+}
+
+.collapsed .collapse-indicator {
+  transform: rotate(-90deg);
+}
+
+.collapsible-content {
+  overflow: hidden;
+  transition: all 0.3s ease;
+  opacity: 1;
+  max-height: none;
+}
+
+.collapsed .collapsible-content {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Animación suave para el contenido */
+.collapsible-content {
+  transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+}
+
+/* Estados específicos para componentes */
+.concepts-manager.collapsed .concepts-content,
+.mass-replacement-manager.collapsed .mass-replacement-content {
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
