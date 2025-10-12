@@ -193,6 +193,42 @@
                     <button id="copyBtn" class="btn-copy">Copiar</button>
                 </div>
             </div>
+            
+            <!-- Sección de filtros -->
+            <div id="tableFilters" class="table-filters hidden">
+                <div class="filters-header">
+                    <h3 class="filters-title">🔍 Filtros</h3>
+                    <button id="clearFiltersBtn" class="btn-clear-filters" type="button">Limpiar</button>
+                </div>
+                <div class="filters-grid">
+                    <div class="filter-item">
+                        <label for="proveedorFilter" class="filter-label">Proveedor</label>
+                        <input 
+                            type="text" 
+                            id="proveedorFilter" 
+                            class="filter-input" 
+                            placeholder="Buscar por proveedor..."
+                            autocomplete="off"
+                        >
+                    </div>
+                    <div class="filter-item">
+                        <label for="conceptoFilter" class="filter-label">Concepto</label>
+                        <select id="conceptoFilter" class="filter-select">
+                            <option value="">Todos los conceptos</option>
+                        </select>
+                    </div>
+                    <div class="filter-item" id="vueltaFilterContainer">
+                        <label for="vueltaFilter" class="filter-label">Vuelta</label>
+                        <select id="vueltaFilter" class="filter-select">
+                            <option value="">Todas las vueltas</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-results">
+                    <span id="filterResultsCount" class="results-count">0 registros encontrados</span>
+                </div>
+            </div>
+            
             <div class="table-container">
                 <!-- Estado vacío -->
                 <div id="emptyTableState" class="empty-table-state">

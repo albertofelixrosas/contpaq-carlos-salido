@@ -68,6 +68,15 @@ const currentTableType = document.querySelector("#currentTableType")
 // Elementos del panel flotante de tipo de datos
 const dataTypeSelector = document.querySelector("#dataTypeSelector")
 
+// Elementos de los filtros de tabla
+const tableFilters = document.querySelector("#tableFilters")
+const clearFiltersBtn = document.querySelector("#clearFiltersBtn")
+const proveedorFilter = document.querySelector("#proveedorFilter")
+const conceptoFilter = document.querySelector("#conceptoFilter")
+const vueltaFilter = document.querySelector("#vueltaFilter")
+const vueltaFilterContainer = document.querySelector("#vueltaFilterContainer")
+const filterResultsCount = document.querySelector("#filterResultsCount")
+
 // ========================================
 // EVENTOS
 // ========================================
@@ -274,6 +283,23 @@ document.querySelectorAll('input[name="step"]').forEach(radio => {
   })
 })
 
+// Eventos de los filtros de tabla
+proveedorFilter.addEventListener('input', () => {
+  applyTableFilters()
+})
+
+conceptoFilter.addEventListener('change', () => {
+  applyTableFilters()
+})
+
+vueltaFilter.addEventListener('change', () => {
+  applyTableFilters()
+})
+
+clearFiltersBtn.addEventListener('click', () => {
+  clearAllTableFilters()
+})
+
 // ========================================
 // FUNCIONES DE MODAL
 // ========================================
@@ -469,6 +495,9 @@ function generateTableFromProcessedData(tableElement, processedData, headers, da
     if (currentSortState.field && currentSortState.dataType === dataType) {
       updateSortIndicators(currentSortState.field, currentSortState.ascending)
     }
+    
+    // 5. Inicializar filtros con los nuevos datos
+    initializeTableFilters(dataType, processedData)
     
   } catch (error) {
     console.error(`Error generando tabla ${dataType}:`, error)
@@ -2309,8 +2338,170 @@ function saveCurrentData(sortedData, dataType) {
  * @returns {string} Tipo de datos ('apk' o 'gg')
  */
 function getSelectedDataType() {
-  const apkRadio = document.querySelector('input[name="dataType"][value="apk"]')
-  return apkRadio && apkRadio.checked ? 'apk' : 'gg'
+  const selectedOption = document.querySelector('input[name="step"]:checked')?.value
+  return selectedOption || 'apk'
+}
+
+// ========================================
+// SISTEMA DE FILTROS DE TABLA
+// ========================================
+
+/**
+ * Variable global para mantener los datos originales sin filtrar
+ */
+let originalTableData = []
+
+/**
+ * Inicializa los filtros de tabla con los datos actuales
+ * @param {string} dataType - Tipo de datos ('apk' o 'gg')
+ * @param {Array<Object>} data - Datos a usar para filtros
+ */
+function initializeTableFilters(dataType, data) {
+  // Guardar datos originales
+  originalTableData = [...data]
+  
+  // Mostrar sección de filtros si hay datos
+  if (data && data.length > 0) {
+    tableFilters.classList.remove('hidden')
+    populateFilterOptions(dataType, data)
+    clearAllTableFilters()
+  } else {
+    tableFilters.classList.add('hidden')
+    originalTableData = []
+  }
+}
+
+/**
+ * Pobla las opciones de los selectores de filtro
+ * @param {string} dataType - Tipo de datos ('apk' o 'gg')
+ * @param {Array<Object>} data - Datos para extraer opciones únicas
+ */
+function populateFilterOptions(dataType, data) {
+  // Filtro de Concepto - obtener conceptos únicos
+  const uniqueConceptos = [...new Set(data.map(record => record.concepto).filter(Boolean))].sort()
+  conceptoFilter.innerHTML = '<option value="">Todos los conceptos</option>'
+  uniqueConceptos.forEach(concepto => {
+    const option = document.createElement('option')
+    option.value = concepto
+    option.textContent = concepto
+    conceptoFilter.appendChild(option)
+  })
+  
+  // Filtro de Vuelta - solo para APK
+  if (dataType === 'apk') {
+    vueltaFilterContainer.classList.remove('hidden')
+    const uniqueVueltas = [...new Set(data.map(record => record.vuelta).filter(Boolean))].sort()
+    vueltaFilter.innerHTML = '<option value="">Todas las vueltas</option>'
+    uniqueVueltas.forEach(vuelta => {
+      const option = document.createElement('option')
+      option.value = vuelta
+      option.textContent = vuelta
+      vueltaFilter.appendChild(option)
+    })
+  } else {
+    // Para GG, ocultar filtro de vuelta
+    vueltaFilterContainer.classList.add('hidden')
+  }
+}
+
+/**
+ * Aplica todos los filtros activos a la tabla
+ */
+function applyTableFilters() {
+  if (originalTableData.length === 0) return
+  
+  const proveedorText = proveedorFilter.value.toLowerCase().trim()
+  const conceptoSelected = conceptoFilter.value
+  const vueltaSelected = vueltaFilter.value
+  
+  // Filtrar datos
+  let filteredData = originalTableData.filter(record => {
+    // Filtro por proveedor (incluye texto, case insensitive)
+    const proveedorValue = (record.proveedor || '').toString().toLowerCase()
+    const matchesProveedor = !proveedorText || proveedorValue.includes(proveedorText)
+    
+    // Filtro por concepto (exacto)
+    const matchesConcepto = !conceptoSelected || record.concepto === conceptoSelected
+    
+    // Filtro por vuelta (exacto, solo para APK)
+    const matchesVuelta = !vueltaSelected || record.vuelta === vueltaSelected
+    
+    return matchesProveedor && matchesConcepto && matchesVuelta
+  })
+  
+  // Actualizar tabla con datos filtrados
+  updateTableWithFilteredData(filteredData)
+  
+  // Actualizar contador de resultados
+  updateFilterResultsCount(filteredData.length, originalTableData.length)
+}
+
+/**
+ * Actualiza la tabla con los datos filtrados
+ * @param {Array<Object>} filteredData - Datos filtrados a mostrar
+ */
+function updateTableWithFilteredData(filteredData) {
+  // Obtener tipo de datos actual
+  const selectedOption = document.querySelector('input[name="step"]:checked')?.value
+  
+  // Regenerar solo el tbody de la tabla
+  const tbody = resultTable.querySelector('tbody')
+  if (!tbody) return
+  
+  tbody.innerHTML = ''
+  
+  if (filteredData.length === 0) {
+    // Mostrar mensaje de sin resultados
+    const tr = document.createElement('tr')
+    tr.className = 'no-results-row'
+    const colspan = resultTable.querySelector('thead tr')?.children.length || 10
+    tr.innerHTML = `
+      <td colspan="${colspan}" style="text-align: center; padding: 40px; color: #666; font-style: italic;">
+        🔍 No se encontraron registros que coincidan con los filtros aplicados
+      </td>
+    `
+    tbody.appendChild(tr)
+    return
+  }
+  
+  // Crear filas con datos filtrados
+  filteredData.forEach(record => {
+    const tr = document.createElement('tr')
+    Object.values(record).forEach(value => {
+      const td = document.createElement('td')
+      td.textContent = value
+      tr.appendChild(td)
+    })
+    tbody.appendChild(tr)
+  })
+}
+
+/**
+ * Actualiza el contador de resultados de filtros
+ * @param {number} filtered - Cantidad de registros filtrados
+ * @param {number} total - Cantidad total de registros
+ */
+function updateFilterResultsCount(filtered, total) {
+  if (filtered === total) {
+    filterResultsCount.textContent = `${total} registro${total !== 1 ? 's' : ''}`
+  } else {
+    filterResultsCount.textContent = `${filtered} de ${total} registro${total !== 1 ? 's' : ''}`
+  }
+}
+
+/**
+ * Limpia todos los filtros aplicados
+ */
+function clearAllTableFilters() {
+  proveedorFilter.value = ''
+  conceptoFilter.value = ''
+  vueltaFilter.value = ''
+  
+  // Mostrar todos los datos originales
+  if (originalTableData.length > 0) {
+    updateTableWithFilteredData(originalTableData)
+    updateFilterResultsCount(originalTableData.length, originalTableData.length)
+  }
 }
 
 // ========================================
@@ -2364,9 +2555,13 @@ function showEmptyTableState() {
   // Mostrar estado vacío
   emptyTableState.classList.remove("hidden")
   
-  // Ocultar tabla y acciones
+  // Ocultar tabla, acciones y filtros
   resultTable.classList.add("hidden")
   tableActions.classList.add("hidden")
+  tableFilters.classList.add("hidden")
+  
+  // Limpiar datos de filtros
+  originalTableData = []
 }
 
 /**

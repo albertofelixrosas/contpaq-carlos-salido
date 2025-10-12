@@ -910,6 +910,129 @@ body {
 }
 
 /* ========================================
+   FILTROS DE TABLA
+   ======================================== */
+
+.table-filters {
+  background: #f8f9fa;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 16px 0;
+}
+
+.filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.filters-title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.btn-clear-filters {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-clear-filters:hover {
+  background: #5a6268;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-label {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.filter-input,
+.filter-select {
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+  outline: none;
+  border-color: #3a86ff;
+  box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.1);
+}
+
+.filter-input::placeholder {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.filter-results {
+  text-align: center;
+  padding-top: 8px;
+  border-top: 1px solid #e9ecef;
+}
+
+.results-count {
+  font-size: 0.85rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Estado oculto para filtro de vuelta en GG */
+.filter-item.hidden {
+  display: none;
+}
+
+/* Fila de sin resultados */
+.no-results-row td {
+  background-color: #f8f9fa;
+  font-style: italic;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .filters-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .btn-clear-filters {
+    align-self: flex-end;
+  }
+}
+
+/* ========================================
    ESTADO VACÍO DE TABLA
    ======================================== */
 
