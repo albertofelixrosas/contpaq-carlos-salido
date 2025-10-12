@@ -242,88 +242,247 @@ function hideModal() {
 }
 
 // ========================================
-// FUNCIONES DE TABLA
+// FUNCIONES DE TABLA - ARQUITECTURA MODULAR
 // ========================================
 
+/*
+GUÍA DE ARQUITECTURA REFACTORIZADA:
+
+Esta sección ha sido refactorizada para separar responsabilidades y hacer el código más modular.
+La nueva arquitectura está dividida en las siguientes capas:
+
+1. PROCESAMIENTO DE DATOS:
+   - processApkDataFromExcel(rawData) → Procesa datos raw de Excel y retorna objetos APK
+   - processGgDataFromExcel(rawData) → Procesa datos raw de Excel y retorna objetos GG
+   - getProcessedDataFromStorage(dataType) → Obtiene datos procesados de localStorage
+
+2. GENERACIÓN DE UI/TABLA:
+   - createTableHeader(headers) → Crea elemento thead con encabezados
+   - createApkTableBody(data) → Crea tbody específico para datos APK
+   - createGgTableBody(data) → Crea tbody específico para datos GG
+   - createGenericTableBody(data) → Crea tbody genérico para cualquier estructura
+   - clearAndSetupTable(element, headers) → Limpia tabla y establece encabezados
+
+3. GESTIÓN DE ALMACENAMIENTO:
+   - saveApkDataToLocalStorage(data, segments) → Guarda datos APK en localStorage
+   - saveGgDataToLocalStorage(data) → Guarda datos GG en localStorage
+
+4. FUNCIONES DE UTILIDAD:
+   - getHeadersForDataType(type) → Obtiene encabezados según tipo de datos
+   - generateTableFromProcessedData() → Función genérica para generar tablas
+
+5. FUNCIONES PRINCIPALES (ORQUESTADORAS):
+   - processExcelAndGenerateTable() → Función principal que integra todo el proceso
+   - generateResultsTableForAPK() → Función simplificada para APK
+   - generateResultsTableForGG() → Función simplificada para GG
+
+VENTAJAS DE LA NUEVA ARQUITECTURA:
+- ✅ Separación de responsabilidades (procesamiento vs renderizado)
+- ✅ Funciones reutilizables para nuevas funcionalidades
+- ✅ Fácil testing individual de cada capa
+- ✅ Extensibilidad para nuevos tipos de datos
+- ✅ Código más limpio y mantenible
+
+PARA NUEVAS FUNCIONALIDADES:
+1. Crear nueva función de procesamiento: processNewTypeDataFromExcel()
+2. Crear función específica de tbody si es necesario
+3. Usar generateTableFromProcessedData() para renderizar
+4. Usar getProcessedDataFromStorage() para obtener datos existentes
+*/
+
 /**
- * Genera una tabla de ejemplo (placeholder)
- * Esta función será reemplazada con lógica real de SheetJS
+ * Crea y retorna el elemento thead con los encabezados especificados
+ * @param {Array<string>} headers - Array de strings con los nombres de los encabezados
+ * @returns {HTMLTableSectionElement} - Elemento thead con los encabezados
+ */
+function createTableHeader(headers) {
+  const thead = document.createElement("thead")
+  const headerRow = document.createElement("tr")
+
+  headers.forEach((header) => {
+    const th = document.createElement("th")
+    th.textContent = header
+    headerRow.appendChild(th)
+  })
+
+  thead.appendChild(headerRow)
+  return thead
+}
+
+/**
+ * Limpia la tabla y establece los encabezados
+ * @param {HTMLTableElement} tableElement - Elemento de tabla a limpiar
+ * @param {Array<string>} headers - Array de encabezados
+ */
+function clearAndSetupTable(tableElement, headers) {
+  // Limpiar tabla existente
+  tableElement.innerHTML = ""
+  
+  // Crear y agregar encabezados
+  const thead = createTableHeader(headers)
+  tableElement.appendChild(thead)
+}
+
+/**
+ * Obtiene los encabezados correspondientes según el tipo de datos
+ * @param {string} dataType - Tipo de datos ("apk" o "gg")
+ * @returns {Array<string>} - Array de encabezados
+ */
+function getHeadersForDataType(dataType) {
+  const baseHeaders = ["Fecha", "Egresos", "Folio", "Proveedor", "Factura", "Importe", "Concepto"]
+  const typeSpecificHeader = dataType === "apk" ? "Vuelta" : "Segmento"
+  const endHeaders = ["Mes", "Año"]
+  
+  return [...baseHeaders, typeSpecificHeader, ...endHeaders]
+}
+
+/**
+ * Procesa un archivo Excel y genera la tabla resultante para datos APK (Refactorizada)
  */
 async function generateResultsTableForAPK() {
-  // Datos de ejemplo
-  const sampleData = await processExcelFile(fileInput.files[0])
-
-  // Limpiar tabla existente
-  resultTable.innerHTML = ""
-
-  // Crear encabezados
-  const thead = document.createElement("thead")
-  const headerRow = document.createElement("tr")
-
-  const headers = ["Fecha", "Egresos", "Folio", "Proveedor", "Factura", "Importe", "Concepto", "Vuelta", "Mes", "Año"]
-  headers.forEach((header) => {
-    const th = document.createElement("th")
-    th.textContent = header
-    headerRow.appendChild(th)
-  })
-
-  thead.appendChild(headerRow)
-  resultTable.appendChild(thead)
-
-  // Crear cuerpo de la tabla usando los datos procesados
-  generateTableBodyForAPK(sampleData)
+  try {
+    await processExcelAndGenerateTable(fileInput.files[0], "apk", resultTable)
+  } catch (error) {
+    console.error("Error generando tabla APK:", error)
+    showModal("Error al procesar el archivo APK")
+  }
 }
 
 /**
- * Genera una tabla de ejemplo (placeholder)
- * Esta función será reemplazada con lógica real de SheetJS
+ * Procesa un archivo Excel y genera la tabla resultante para datos GG (Refactorizada)
  */
 async function generateResultsTableForGG() {
-  // Datos de ejemplo
-  const sampleData = await processExcelFile(fileInput.files[0])
-
-  // Limpiar tabla existente
-  resultTable.innerHTML = ""
-
-  // Crear encabezados
-  const thead = document.createElement("thead")
-  const headerRow = document.createElement("tr")
-
-  const headers = ["Fecha", "Egresos", "Folio", "Proveedor", "Factura", "Importe", "Concepto", "Segmento", "Mes", "Año"]
-  headers.forEach((header) => {
-    const th = document.createElement("th")
-    th.textContent = header
-    headerRow.appendChild(th)
-  })
-
-  thead.appendChild(headerRow)
-  resultTable.appendChild(thead)
-
-  // Crear cuerpo de la tabla usando los datos procesados
-  generateTableBodyForGG(sampleData)
+  try {
+    await processExcelAndGenerateTable(fileInput.files[0], "gg", resultTable)
+  } catch (error) {
+    console.error("Error generando tabla GG:", error)
+    showModal("Error al procesar el archivo GG")
+  }
 }
 
 /**
- * Genera el cuerpo de la tabla a partir de los datos proporcionados
- * @param {string[][]} data 
+ * Función genérica para generar tablas con datos procesados
+ * @param {HTMLTableElement} tableElement - Elemento de tabla donde renderizar
+ * @param {Array<Object>} processedData - Datos ya procesados
+ * @param {Array<string>} headers - Encabezados de la tabla
+ * @param {string} dataType - Tipo de datos para identificar el procesamiento
  */
-function generateTableBodyForAPK(data) {
+function generateTableFromProcessedData(tableElement, processedData, headers, dataType) {
+  try {
+    // 1. Configurar tabla
+    clearAndSetupTable(tableElement, headers)
+    
+    // 2. Crear cuerpo de tabla según el tipo
+    let tbody
+    if (dataType === "apk") {
+      tbody = createApkTableBody(processedData)
+    } else if (dataType === "gg") {
+      tbody = createGgTableBody(processedData)
+    } else {
+      // Función genérica para otros tipos de datos
+      tbody = createGenericTableBody(processedData)
+    }
+    
+    // 3. Agregar cuerpo a la tabla
+    tableElement.appendChild(tbody)
+    
+  } catch (error) {
+    console.error(`Error generando tabla ${dataType}:`, error)
+    throw error
+  }
+}
+
+/**
+ * Crea un tbody genérico para cualquier tipo de datos estructurados
+ * @param {Array<Object>} data - Datos estructurados
+ * @returns {HTMLTableSectionElement} - Elemento tbody
+ */
+function createGenericTableBody(data) {
   const tbody = document.createElement("tbody")
+  
+  data.forEach((rowData) => {
+    const tr = document.createElement("tr")
+    Object.values(rowData).forEach((value) => {
+      const td = document.createElement("td")
+      td.textContent = value || ""
+      tr.appendChild(td)
+    })
+    tbody.appendChild(tr)
+  })
+  
+  return tbody
+}
 
-  // Borrar apkData de localStorage
-  localStorage.removeItem('apkData')
+/**
+ * Función principal que procesa archivo Excel y genera tabla completa
+ * @param {File} file - Archivo Excel a procesar
+ * @param {string} dataType - Tipo de datos ("apk" o "gg")
+ * @param {HTMLTableElement} tableElement - Elemento de tabla donde renderizar
+ */
+async function processExcelAndGenerateTable(file, dataType, tableElement) {
+  try {
+    // 1. Procesar archivo Excel
+    const rawData = await processExcelFile(file)
+    
+    // 2. Procesar datos según el tipo
+    let processedResult
+    if (dataType === "apk") {
+      processedResult = processApkDataFromExcel(rawData)
+      // Guardar en localStorage
+      saveApkDataToLocalStorage(processedResult.processedData, processedResult.segmentNames)
+      updateSegmentEditorVisibility()
+    } else if (dataType === "gg") {
+      processedResult = processGgDataFromExcel(rawData)
+      // Guardar en localStorage
+      saveGgDataToLocalStorage(processedResult.processedData)
+    } else {
+      throw new Error(`Tipo de datos no soportado: ${dataType}`)
+    }
+    
+    // 3. Generar tabla
+    const headers = getHeadersForDataType(dataType)
+    generateTableFromProcessedData(tableElement, processedResult.processedData, headers, dataType)
+    
+    return processedResult.processedData
+    
+  } catch (error) {
+    console.error(`Error en processExcelAndGenerateTable para ${dataType}:`, error)
+    throw error
+  }
+}
 
-  // Aquí va la lógica para procesar los datos y llenar las filas de la tabla
+/**
+ * Obtiene datos procesados de un tipo específico desde localStorage
+ * @param {string} dataType - Tipo de datos ("apk" o "gg")
+ * @returns {Array<Object>} - Datos procesados o array vacío si no existen
+ */
+function getProcessedDataFromStorage(dataType) {
+  try {
+    const storageKey = dataType === "apk" ? "apkData" : "ggData"
+    const data = localStorage.getItem(storageKey)
+    return data ? JSON.parse(data) : []
+  } catch (error) {
+    console.error(`Error obteniendo datos ${dataType} de localStorage:`, error)
+    return []
+  }
+}
 
+/**
+ * Procesa los datos raw de Excel y los convierte en datos APK estructurados
+ * @param {string[][]} rawData - Datos raw de Excel
+ * @returns {{ processedData: Array<Object>, segmentNames: Set<string> }} - Datos procesados y nombres de segmentos
+ */
+function processApkDataFromExcel(rawData) {
   // Variables para mantener el estado actual de los valores del segmento y cuenta contable
   let currentAccountName = ""
   let currentSegmentName = ""
   const segmentNames = new Set()
   const apkData = []
+
   // Se lee las filas de principio a fin
-  for (let i = 1; i < data.length; i++) {
+  for (let i = 1; i < rawData.length; i++) {
     // Se obtiene la fila actual
-    const row = data[i]
+    const row = rawData[i]
     // Se obtiene el valor de la primera columna
     const firstCell = String(row?.[0] || '').trim()
 
@@ -365,21 +524,52 @@ function generateTableBodyForAPK(data) {
       }
 
       apkData.push(newRowObject)
-
-      // Se crea una nueva fila en la tabla
-      const tr = document.createElement("tr")
-      // Se agregan las celdas a la fila
-      Object.values(newRowObject).forEach((value) => {
-        const td = document.createElement("td")
-        td.textContent = value
-        tr.appendChild(td)
-        segmentNames.add(newRowObject.vuelta)
-      })
-      // Se agrega la fila al cuerpo de la tabla
-      tbody.appendChild(tr)
+      segmentNames.add(newRowObject.vuelta)
     }
   }
 
+  return {
+    processedData: apkData,
+    segmentNames: segmentNames
+  }
+}
+
+/**
+ * Crea y retorna el elemento tbody con las filas de datos APK
+ * @param {Array<Object>} apkData - Datos APK procesados
+ * @returns {HTMLTableSectionElement} - Elemento tbody con las filas
+ */
+function createApkTableBody(apkData) {
+  const tbody = document.createElement("tbody")
+
+  apkData.forEach((rowData) => {
+    // Se crea una nueva fila en la tabla
+    const tr = document.createElement("tr")
+    // Se agregan las celdas a la fila
+    Object.values(rowData).forEach((value) => {
+      const td = document.createElement("td")
+      td.textContent = value
+      tr.appendChild(td)
+    })
+    // Se agrega la fila al cuerpo de la tabla
+    tbody.appendChild(tr)
+  })
+
+  return tbody
+}
+
+/**
+ * Guarda los datos APK procesados en localStorage
+ * @param {Array<Object>} apkData - Datos APK a guardar
+ * @param {Set<string>} segmentNames - Nombres de segmentos encontrados
+ */
+function saveApkDataToLocalStorage(apkData, segmentNames) {
+  // Borrar apkData previo de localStorage
+  localStorage.removeItem('apkData')
+  
+  // Guardar los datos APK
+  localStorage.setItem('apkData', JSON.stringify(apkData))
+  
   // Se crea el listado de segmentos encontrados al localStorage
   const segmentList = Array.from(segmentNames).map(segment => {
     return {
@@ -387,37 +577,44 @@ function generateTableBodyForAPK(data) {
       count: 0,
     }
   })
-
   localStorage.setItem('segmentList', JSON.stringify(segmentList))
-  updateSegmentEditorVisibility()
-
-  localStorage.setItem('apkData', JSON.stringify(apkData))
-
-  // Se agrega el cuerpo a la tabla
-  resultTable.appendChild(tbody)
 }
 
 /**
- * Genera el cuerpo de la tabla a partir de los datos proporcionados
- * @param {string[][]} data 
+ * Genera el cuerpo de la tabla a partir de los datos proporcionados (Refactorizada)
+ * @param {string[][]} data - Datos raw de Excel
  */
-function generateTableBodyForGG(data) {
-  const tbody = document.createElement("tbody")
+function generateTableBodyForAPK(data) {
+  // 1. Procesar los datos
+  const { processedData, segmentNames } = processApkDataFromExcel(data)
+  
+  // 2. Crear el cuerpo de la tabla
+  const tbody = createApkTableBody(processedData)
+  
+  // 3. Guardar en localStorage
+  saveApkDataToLocalStorage(processedData, segmentNames)
+  
+  // 4. Agregar el cuerpo a la tabla y actualizar UI
+  resultTable.appendChild(tbody)
+  updateSegmentEditorVisibility()
+}
 
-  // Borrar ggData de localStorage
-  localStorage.removeItem('ggData')
-
-  // Aquí va la lógica para procesar los datos y llenar las filas de la tabla
-
+/**
+ * Procesa los datos raw de Excel y los convierte en datos GG estructurados
+ * @param {string[][]} rawData - Datos raw de Excel
+ * @returns {{ processedData: Array<Object>, segmentNames: Set<string> }} - Datos procesados y nombres de segmentos
+ */
+function processGgDataFromExcel(rawData) {
   // Variables para mantener el estado actual de los valores del segmento y cuenta contable
   let currentAccountName = ""
   let currentSegmentName = ""
   const segmentNames = new Set()
   const ggData = []
+
   // Se lee las filas de principio a fin
-  for (let i = 1; i < data.length; i++) {
+  for (let i = 1; i < rawData.length; i++) {
     // Se obtiene la fila actual
-    const row = data[i]
+    const row = rawData[i]
     // Se obtiene el valor de la primera columna
     const firstCell = String(row?.[0] || '').trim()
 
@@ -441,7 +638,7 @@ function generateTableBodyForGG(data) {
       const rowObject = createObjectFromRow(row)
 
       // Quiero convertir el objeto a un nuevo objeto que incluya los valores actuales de segmento y cuenta contable
-      // FECHA	EGRESOS	FOLIO	PROVEEDOR	FACTURA	 IMPORTE 	CONCEPTO	VUELTA	MES	AÑO
+      // FECHA	EGRESOS	FOLIO	PROVEEDOR	FACTURA	 IMPORTE 	CONCEPTO	SEGMENTO	MES	AÑO
 
       const { monthString, year } = parseDateString(rowObject.fecha)
 
@@ -453,31 +650,73 @@ function generateTableBodyForGG(data) {
         factura: rowObject.ref,
         importe: rowObject.cargos,
         concepto: currentAccountName,
-        vuelta: currentSegmentName,
+        vuelta: currentSegmentName, // En GG también se llama 'vuelta' internamente pero se muestra como 'Segmento'
         mes: monthString,
         año: year,
       }
 
       ggData.push(newRowObject)
-
-      // Se crea una nueva fila en la tabla
-      const tr = document.createElement("tr")
-      // Se agregan las celdas a la fila
-      Object.values(newRowObject).forEach((value) => {
-        const td = document.createElement("td")
-        td.textContent = value
-        tr.appendChild(td)
-        segmentNames.add(newRowObject.vuelta)
-      })
-      // Se agrega la fila al cuerpo de la tabla
-      tbody.appendChild(tr)
+      segmentNames.add(newRowObject.vuelta)
     }
   }
 
+  return {
+    processedData: ggData,
+    segmentNames: segmentNames
+  }
+}
 
+/**
+ * Crea y retorna el elemento tbody con las filas de datos GG
+ * @param {Array<Object>} ggData - Datos GG procesados
+ * @returns {HTMLTableSectionElement} - Elemento tbody con las filas
+ */
+function createGgTableBody(ggData) {
+  const tbody = document.createElement("tbody")
+
+  ggData.forEach((rowData) => {
+    // Se crea una nueva fila en la tabla
+    const tr = document.createElement("tr")
+    // Se agregan las celdas a la fila
+    Object.values(rowData).forEach((value) => {
+      const td = document.createElement("td")
+      td.textContent = value
+      tr.appendChild(td)
+    })
+    // Se agrega la fila al cuerpo de la tabla
+    tbody.appendChild(tr)
+  })
+
+  return tbody
+}
+
+/**
+ * Guarda los datos GG procesados en localStorage
+ * @param {Array<Object>} ggData - Datos GG a guardar
+ */
+function saveGgDataToLocalStorage(ggData) {
+  // Borrar ggData previo de localStorage
+  localStorage.removeItem('ggData')
+  
+  // Guardar los datos GG
   localStorage.setItem('ggData', JSON.stringify(ggData))
+}
 
-  // Se agrega el cuerpo a la tabla
+/**
+ * Genera el cuerpo de la tabla a partir de los datos proporcionados (Refactorizada)
+ * @param {string[][]} data - Datos raw de Excel
+ */
+function generateTableBodyForGG(data) {
+  // 1. Procesar los datos
+  const { processedData, segmentNames } = processGgDataFromExcel(data)
+  
+  // 2. Crear el cuerpo de la tabla
+  const tbody = createGgTableBody(processedData)
+  
+  // 3. Guardar en localStorage
+  saveGgDataToLocalStorage(processedData)
+  
+  // 4. Agregar el cuerpo a la tabla
   resultTable.appendChild(tbody)
 }
 
