@@ -346,15 +346,35 @@ PARA NUEVAS FUNCIONALIDADES:
 /**
  * Crea y retorna el elemento thead con los encabezados especificados
  * @param {Array<string>} headers - Array de strings con los nombres de los encabezados
+ * @param {string} dataType - Tipo de datos para configurar ordenamiento
  * @returns {HTMLTableSectionElement} - Elemento thead con los encabezados
  */
-function createTableHeader(headers) {
+function createTableHeader(headers, dataType = 'apk') {
   const thead = document.createElement("thead")
   const headerRow = document.createElement("tr")
 
-  headers.forEach((header) => {
+  // Campos que permiten ordenamiento
+  const sortableFields = ['Fecha', 'Proveedor', 'Importe', 'Concepto']
+  
+  headers.forEach((header, index) => {
     const th = document.createElement("th")
-    th.textContent = header
+    
+    if (sortableFields.includes(header)) {
+      // Hacer la cabecera clickeable
+      th.classList.add('sortable-header')
+      th.textContent = header
+      
+      // Agregar evento de click para ordenamiento
+      th.addEventListener('click', handleHeaderClick)
+      
+      // Agregar atributos data para identificar el campo y tipo
+      th.setAttribute('data-field', header)
+      th.setAttribute('data-type', dataType)
+    } else {
+      th.textContent = header
+      th.classList.add('non-sortable-header')
+    }
+    
     headerRow.appendChild(th)
   })
 
@@ -366,13 +386,14 @@ function createTableHeader(headers) {
  * Limpia la tabla y establece los encabezados
  * @param {HTMLTableElement} tableElement - Elemento de tabla a limpiar
  * @param {Array<string>} headers - Array de encabezados
+ * @param {string} dataType - Tipo de datos para configurar ordenamiento
  */
-function clearAndSetupTable(tableElement, headers) {
+function clearAndSetupTable(tableElement, headers, dataType = 'apk') {
   // Limpiar tabla existente
   tableElement.innerHTML = ""
   
   // Crear y agregar encabezados
-  const thead = createTableHeader(headers)
+  const thead = createTableHeader(headers, dataType)
   tableElement.appendChild(thead)
 }
 
@@ -382,11 +403,12 @@ function clearAndSetupTable(tableElement, headers) {
  * @returns {Array<string>} - Array de encabezados
  */
 function getHeadersForDataType(dataType) {
+  const idHeader = ["ID"]
   const baseHeaders = ["Fecha", "Egresos", "Folio", "Proveedor", "Factura", "Importe", "Concepto"]
   const typeSpecificHeader = dataType === "apk" ? "Vuelta" : "Segmento"
   const endHeaders = ["Mes", "Año"]
   
-  return [...baseHeaders, typeSpecificHeader, ...endHeaders]
+  return [...idHeader, ...baseHeaders, typeSpecificHeader, ...endHeaders]
 }
 
 /**
@@ -427,7 +449,7 @@ async function generateResultsTableForGG() {
 function generateTableFromProcessedData(tableElement, processedData, headers, dataType) {
   try {
     // 1. Configurar tabla
-    clearAndSetupTable(tableElement, headers)
+    clearAndSetupTable(tableElement, headers, dataType)
     
     // 2. Crear cuerpo de tabla según el tipo
     let tbody
@@ -442,6 +464,11 @@ function generateTableFromProcessedData(tableElement, processedData, headers, da
     
     // 3. Agregar cuerpo a la tabla
     tableElement.appendChild(tbody)
+    
+    // 4. Restaurar indicadores de ordenamiento si existen
+    if (currentSortState.field && currentSortState.dataType === dataType) {
+      updateSortIndicators(currentSortState.field, currentSortState.ascending)
+    }
     
   } catch (error) {
     console.error(`Error generando tabla ${dataType}:`, error)
@@ -538,6 +565,7 @@ function processApkDataFromExcel(rawData) {
   let currentSegmentName = ""
   const segmentNames = new Set()
   const apkData = []
+  let recordId = 1  // ID auto-incremental comenzando en 1
 
   // Se lee las filas de principio a fin
   for (let i = 1; i < rawData.length; i++) {
@@ -571,6 +599,7 @@ function processApkDataFromExcel(rawData) {
       const { monthString, year } = parseDateString(rowObject.fecha)
 
       const newRowObject = {
+        id: recordId++,  // ID auto-incremental único
         fecha: rowObject.fecha,
         egresos: rowObject.tipo,
         folio: rowObject.numero,
@@ -670,6 +699,7 @@ function processGgDataFromExcel(rawData) {
   let currentSegmentName = ""
   const segmentNames = new Set()
   const ggData = []
+  let recordId = 1  // ID auto-incremental comenzando en 1
 
   // Se lee las filas de principio a fin
   for (let i = 1; i < rawData.length; i++) {
@@ -703,6 +733,7 @@ function processGgDataFromExcel(rawData) {
       const { monthString, year } = parseDateString(rowObject.fecha)
 
       const newRowObject = {
+        id: recordId++,  // ID auto-incremental único
         fecha: rowObject.fecha,
         egresos: rowObject.tipo,
         folio: rowObject.numero,
@@ -2077,6 +2108,209 @@ function debugMassReplacementComponent() {
   }
   
   console.log("============================================")
+}
+
+// ========================================
+// UTILIDADES DE FECHA Y ORDENAMIENTO
+// ========================================
+
+/**
+ * Convierte una fecha en formato personalizado "DD/Mmm/YYYY" a objeto Date
+ * @param {string} dateString - Fecha en formato "05/Sep/2025"
+ * @returns {Date|null} - Objeto Date o null si es inválida
+ */
+function parseCustomDate(dateString) {
+  if (!dateString || typeof dateString !== 'string') return null
+  
+  const monthsMap = {
+    'Ene': 0, 'Feb': 1, 'Mar': 2, 'Abr': 3, 'May': 4, 'Jun': 5,
+    'Jul': 6, 'Ago': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dic': 11
+  }
+  
+  // Parsear formato DD/Mmm/YYYY
+  const parts = dateString.trim().split('/')
+  if (parts.length !== 3) return null
+  
+  const day = parseInt(parts[0], 10)
+  const monthStr = parts[1]
+  const year = parseInt(parts[2], 10)
+  
+  if (isNaN(day) || isNaN(year) || !monthsMap.hasOwnProperty(monthStr)) {
+    return null
+  }
+  
+  const month = monthsMap[monthStr]
+  return new Date(year, month, day)
+}
+
+/**
+ * Compara dos valores para ordenamiento
+ * @param {any} a - Primer valor
+ * @param {any} b - Segundo valor
+ * @param {string} type - Tipo de comparación ('date', 'number', 'text')
+ * @param {boolean} ascending - Si es orden ascendente
+ * @returns {number} - Resultado de comparación (-1, 0, 1)
+ */
+function compareValues(a, b, type, ascending = true) {
+  let result = 0
+  
+  switch (type) {
+    case 'date':
+      const dateA = parseCustomDate(a)
+      const dateB = parseCustomDate(b)
+      if (!dateA && !dateB) result = 0
+      else if (!dateA) result = 1
+      else if (!dateB) result = -1
+      else result = dateA.getTime() - dateB.getTime()
+      break
+      
+    case 'number':
+      const numA = parseFloat(a) || 0
+      const numB = parseFloat(b) || 0
+      result = numA - numB
+      break
+      
+    case 'text':
+    default:
+      const strA = String(a || '').toLowerCase()
+      const strB = String(b || '').toLowerCase()
+      result = strA.localeCompare(strB)
+      break
+  }
+  
+  return ascending ? result : -result
+}
+
+/**
+ * Estado actual del ordenamiento de tabla
+ */
+let currentSortState = {
+  field: null,
+  ascending: true,
+  dataType: null
+}
+
+/**
+ * Ordena la tabla por un campo específico
+ * @param {string} field - Campo por el cual ordenar
+ * @param {boolean} ascending - Dirección del ordenamiento
+ * @param {string} dataType - Tipo de datos ("apk" o "gg")
+ */
+function sortTableByField(field, ascending, dataType) {
+  // Obtener datos actuales
+  const data = getCurrentData(dataType)
+  if (!data || data.length === 0) return
+  
+  // Determinar tipo de comparación según el campo
+  let compareType = 'text'
+  if (field === 'Fecha') compareType = 'date'
+  else if (field === 'Importe') compareType = 'number'
+  
+  // Mapear nombre del campo a propiedad del objeto
+  const fieldMap = {
+    'Fecha': 'fecha',
+    'Proveedor': 'proveedor', 
+    'Importe': 'importe',
+    'Concepto': 'concepto'
+  }
+  
+  const fieldProperty = fieldMap[field]
+  if (!fieldProperty) return
+  
+  // Ordenar datos
+  const sortedData = [...data].sort((a, b) => {
+    const primaryResult = compareValues(a[fieldProperty], b[fieldProperty], compareType, ascending)
+    // Ordenamiento secundario por ID para estabilidad
+    return primaryResult !== 0 ? primaryResult : compareValues(a.id, b.id, 'number', true)
+  })
+  
+  // Actualizar estado de ordenamiento
+  currentSortState = { field, ascending, dataType }
+  
+  // Guardar datos ordenados
+  saveCurrentData(sortedData, dataType)
+  
+  // Regenerar tabla
+  const headers = getHeadersForDataType(dataType)
+  generateTableFromProcessedData(resultTable, sortedData, headers, dataType)
+  
+  // Actualizar indicadores visuales de ordenamiento
+  updateSortIndicators(field, ascending)
+}
+
+/**
+ * Actualiza los indicadores visuales de ordenamiento en las cabeceras
+ * @param {string} activeField - Campo actualmente activo para ordenamiento
+ * @param {boolean} ascending - Si el ordenamiento es ascendente
+ */
+function updateSortIndicators(activeField, ascending) {
+  // Limpiar todos los indicadores
+  const headers = resultTable.querySelectorAll('.sortable-header')
+  headers.forEach(header => {
+    header.classList.remove('sort-active', 'sort-asc-active', 'sort-desc-active')
+  })
+  
+  // Activar indicador del campo actual
+  const activeHeader = resultTable.querySelector(`[data-field="${activeField}"]`)
+  if (activeHeader) {
+    activeHeader.classList.add('sort-active')
+    if (ascending) {
+      activeHeader.classList.add('sort-asc-active')
+    } else {
+      activeHeader.classList.add('sort-desc-active')
+    }
+  }
+}
+
+/**
+ * Maneja el evento de click en las cabeceras ordenables
+ * @param {Event} event - Evento de click
+ */
+function handleHeaderClick(event) {
+  const header = event.currentTarget
+  const fieldName = header.dataset.field
+  const dataType = header.dataset.type || getSelectedDataType()
+  
+  if (!fieldName) return
+  
+  // Determinar dirección de ordenamiento
+  let ascending = true
+  if (currentSortState.field === fieldName && currentSortState.dataType === dataType) {
+    ascending = !currentSortState.ascending
+  }
+  
+  // Ordenar tabla
+  sortTableByField(fieldName, ascending, dataType)
+}
+
+/**
+ * Obtiene los datos actuales del localStorage según el tipo
+ * @param {string} dataType - Tipo de datos ('apk' o 'gg')
+ * @returns {Array<Object>} Datos procesados
+ */
+function getCurrentData(dataType) {
+  const key = dataType === 'apk' ? 'apkData' : 'ggData'
+  const storedData = localStorage.getItem(key)
+  return storedData ? JSON.parse(storedData) : []
+}
+
+/**
+ * Guarda los datos ordenados en localStorage
+ * @param {Array<Object>} sortedData - Datos ordenados
+ * @param {string} dataType - Tipo de datos ('apk' o 'gg')
+ */
+function saveCurrentData(sortedData, dataType) {
+  const key = dataType === 'apk' ? 'apkData' : 'ggData'
+  localStorage.setItem(key, JSON.stringify(sortedData))
+}
+
+/**
+ * Obtiene el tipo de datos seleccionado actualmente
+ * @returns {string} Tipo de datos ('apk' o 'gg')
+ */
+function getSelectedDataType() {
+  const apkRadio = document.querySelector('input[name="dataType"][value="apk"]')
+  return apkRadio && apkRadio.checked ? 'apk' : 'gg'
 }
 
 // ========================================

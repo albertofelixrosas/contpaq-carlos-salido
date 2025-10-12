@@ -826,6 +826,90 @@ body {
 }
 
 /* ========================================
+   CABECERAS ORDENABLES
+   ======================================== */
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: background-color 0.2s ease;
+  padding-right: 30px !important; /* Espacio extra para el indicador */
+}
+
+.sortable-header:hover {
+  background-color: #e9ecef !important;
+}
+
+/* Indicador por defecto (sin ordenamiento) */
+.sortable-header::after {
+  content: '⇅';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.4;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  color: #6c757d;
+  font-weight: normal;
+}
+
+.sortable-header:hover::after {
+  opacity: 0.7;
+  transform: translateY(-50%) scale(1.1);
+}
+
+/* Cabecera activa (ordenamiento aplicado) */
+.sortable-header.sort-active {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  font-weight: 600;
+}
+
+.sortable-header.sort-active::after {
+  opacity: 1;
+  color: #1976d2;
+  font-weight: bold;
+  font-size: 18px;
+  transform: translateY(-50%) scale(1.2);
+}
+
+/* Indicador ascendente */
+.sortable-header.sort-asc-active::after {
+  content: '▲';
+  color: #2e7d32;
+}
+
+/* Indicador descendente */
+.sortable-header.sort-desc-active::after {
+  content: '▼';
+  color: #d32f2f;
+}
+
+/* Animación de cambio de estado */
+.sortable-header.sort-active::after {
+  animation: sortIndicatorPulse 0.3s ease-out;
+}
+
+@keyframes sortIndicatorPulse {
+  0% {
+    transform: translateY(-50%) scale(1);
+  }
+  50% {
+    transform: translateY(-50%) scale(1.4);
+  }
+  100% {
+    transform: translateY(-50%) scale(1.2);
+  }
+}
+
+/* Estilos adicionales para mejor UX */
+.sortable-header.sort-active:hover::after {
+  transform: translateY(-50%) scale(1.3);
+}
+
+/* ========================================
    ESTADO VACÍO DE TABLA
    ======================================== */
 
