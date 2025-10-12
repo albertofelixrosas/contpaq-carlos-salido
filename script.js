@@ -517,7 +517,8 @@ function createGenericTableBody(data) {
     const tr = document.createElement("tr")
     Object.values(rowData).forEach((value) => {
       const td = document.createElement("td")
-      td.textContent = value || ""
+      // Asegurar que siempre haya contenido, aunque sea vacío
+      td.textContent = value !== null && value !== undefined ? String(value) : ""
       tr.appendChild(td)
     })
     tbody.appendChild(tr)
@@ -627,14 +628,17 @@ function processApkDataFromExcel(rawData) {
 
       const { monthString, year } = parseDateString(rowObject.fecha)
 
+      // En caso de que un valor no exista, se asigna cadena vacía o 0
+      // Se crea el nuevo objeto con la estructura deseada
+      // ID auto-incremental, Fecha, Egresos, Folio, Proveedor, Factura, Importe, Concepto, Vuelta, Mes, Año
       const newRowObject = {
         id: recordId++,  // ID auto-incremental único
         fecha: rowObject.fecha,
         egresos: rowObject.tipo,
-        folio: rowObject.numero,
-        proveedor: rowObject.concepto,
-        factura: rowObject.ref,
-        importe: rowObject.cargos,
+        folio: rowObject.numero || "",
+        proveedor: rowObject.concepto || "",
+        factura: rowObject.ref || "",
+        importe: rowObject.cargos || 0,
         concepto: currentAccountName,
         vuelta: currentSegmentName,
         mes: monthString,
@@ -663,10 +667,11 @@ function createApkTableBody(apkData) {
   apkData.forEach((rowData) => {
     // Se crea una nueva fila en la tabla
     const tr = document.createElement("tr")
-    // Se agregan las celdas a la fila
+    // Se agregan las celdas a la fila asegurando que cada campo tenga su td
     Object.values(rowData).forEach((value) => {
       const td = document.createElement("td")
-      td.textContent = value
+      // Asegurar que siempre haya contenido, aunque sea vacío
+      td.textContent = value !== null && value !== undefined ? String(value) : ""
       tr.appendChild(td)
     })
     // Se agrega la fila al cuerpo de la tabla
@@ -765,10 +770,10 @@ function processGgDataFromExcel(rawData) {
         id: recordId++,  // ID auto-incremental único
         fecha: rowObject.fecha,
         egresos: rowObject.tipo,
-        folio: rowObject.numero,
-        proveedor: rowObject.concepto,
-        factura: rowObject.ref,
-        importe: rowObject.cargos,
+        folio: rowObject.numero || "",
+        proveedor: rowObject.concepto || "",
+        factura: rowObject.ref || "",
+        importe: rowObject.cargos || 0,
         concepto: currentAccountName,
         vuelta: currentSegmentName, // En GG también se llama 'vuelta' internamente pero se muestra como 'Segmento'
         mes: monthString,
@@ -797,10 +802,11 @@ function createGgTableBody(ggData) {
   ggData.forEach((rowData) => {
     // Se crea una nueva fila en la tabla
     const tr = document.createElement("tr")
-    // Se agregan las celdas a la fila
+    // Se agregan las celdas a la fila asegurando que cada campo tenga su td
     Object.values(rowData).forEach((value) => {
       const td = document.createElement("td")
-      td.textContent = value
+      // Asegurar que siempre haya contenido, aunque sea vacío
+      td.textContent = value !== null && value !== undefined ? String(value) : ""
       tr.appendChild(td)
     })
     // Se agrega la fila al cuerpo de la tabla
@@ -1745,7 +1751,8 @@ function updateTableAfterConceptChange() {
       
       values.forEach(value => {
         const td = document.createElement("td")
-        td.textContent = value
+        // Asegurar que siempre haya contenido, aunque sea vacío
+        td.textContent = value !== null && value !== undefined ? String(value) : ""
         tr.appendChild(td)
       })
       
@@ -2469,7 +2476,8 @@ function updateTableWithFilteredData(filteredData) {
     const tr = document.createElement('tr')
     Object.values(record).forEach(value => {
       const td = document.createElement('td')
-      td.textContent = value
+      // Asegurar que siempre haya contenido, aunque sea vacío
+      td.textContent = value !== null && value !== undefined ? String(value) : ""
       tr.appendChild(td)
     })
     tbody.appendChild(tr)
