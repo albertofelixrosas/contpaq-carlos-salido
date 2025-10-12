@@ -176,18 +176,6 @@
                     <span id="fileName" class="file-name"></span>
                 </div>
 
-                 <!-- Opciones de tipo radio -->
-                <div id="radioOptions" class="radio-options">
-                    <label>
-                        <input type="radio" name="step" value="apk" class="radio-input" checked>
-                        Primer paso, APK's
-                    </label>
-                    <label>
-                        <input type="radio" name="step" value="gg" class="radio-input">
-                        Segundo paso, GG
-                    </label>
-                </div>
-
                  <!-- Botón de envío  -->
                 <button type="submit" class="btn-submit">Procesar archivo</button>
             </form>
@@ -278,6 +266,32 @@
                     <button id="changeConceptBtn" class="btn-change">Cambiar</button>
                     <button id="skipRecord" class="btn-skip">Saltar</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+     <!-- Panel flotante para selección de tipo de datos -->
+    <div id="dataTypeSelector" class="data-type-selector">
+        <div class="data-type-container">
+            <div class="data-type-header">
+                <h4 class="data-type-title">Tipo de Procesamiento</h4>
+                <span class="data-type-description">Selecciona el tipo de datos a procesar</span>
+            </div>
+            <div id="radioOptions" class="radio-options">
+                <label class="radio-option">
+                    <input type="radio" name="step" value="apk" class="radio-input" checked>
+                    <span class="radio-label">
+                        <strong>Primer paso, APK's</strong>
+                        <small>Procesamiento de archivos APK</small>
+                    </span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="step" value="gg" class="radio-input">
+                    <span class="radio-label">
+                        <strong>Segundo paso, GG</strong>
+                        <small>Procesamiento de archivos GG</small>
+                    </span>
+                </label>
             </div>
         </div>
     </div>

@@ -58,6 +58,9 @@ const replacementSummary = document.querySelector("#replacementSummary")
 const previewReplacementBtn = document.querySelector("#previewReplacementBtn")
 const executeReplacementBtn = document.querySelector("#executeReplacementBtn")
 
+// Elementos del panel flotante de tipo de datos
+const dataTypeSelector = document.querySelector("#dataTypeSelector")
+
 // ========================================
 // EVENTOS
 // ========================================
