@@ -196,12 +196,22 @@ verifyBtn.addEventListener("click", () => {
 })
 
 closeCarouselBtn.addEventListener("click", () => {
-  closeVerifyCarousel()
+  // Verificar si estamos en modo individual o carrusel
+  if (currentIndividualRecord) {
+    closeIndividualRecordModal()
+  } else {
+    closeVerifyCarousel()
+  }
 })
 
 verifyCarousel.addEventListener("click", (e) => {
   if (e.target === verifyCarousel || e.target.classList.contains("carousel-overlay")) {
-    closeVerifyCarousel()
+    // Verificar si estamos en modo individual o carrusel
+    if (currentIndividualRecord) {
+      closeIndividualRecordModal()
+    } else {
+      closeVerifyCarousel()
+    }
   }
 })
 
@@ -223,6 +233,7 @@ skipRecordBtn.addEventListener("click", () => {
 
 conceptSelect.addEventListener("change", () => {
   validateChangeButton()
+  validateIndividualChangeButton() // También validar para modal individual
 })
 
 // Eventos de teclado para el carrusel
@@ -664,9 +675,20 @@ function processApkDataFromExcel(rawData) {
 function createApkTableBody(apkData) {
   const tbody = document.createElement("tbody")
 
-  apkData.forEach((rowData) => {
+  apkData.forEach((rowData, index) => {
     // Se crea una nueva fila en la tabla
     const tr = document.createElement("tr")
+    
+    // Agregar atributo data-record-id para identificar la fila
+    tr.setAttribute('data-record-id', rowData.id)
+    tr.setAttribute('data-record-index', index)
+    tr.classList.add('table-row-clickable')
+    
+    // Agregar event listener para abrir modal individual
+    tr.addEventListener('click', () => {
+      openIndividualRecordModal(rowData, 'apk')
+    })
+    
     // Se agregan las celdas a la fila asegurando que cada campo tenga su td
     Object.values(rowData).forEach((value) => {
       const td = document.createElement("td")
@@ -799,9 +821,20 @@ function processGgDataFromExcel(rawData) {
 function createGgTableBody(ggData) {
   const tbody = document.createElement("tbody")
 
-  ggData.forEach((rowData) => {
+  ggData.forEach((rowData, index) => {
     // Se crea una nueva fila en la tabla
     const tr = document.createElement("tr")
+    
+    // Agregar atributo data-record-id para identificar la fila
+    tr.setAttribute('data-record-id', rowData.id)
+    tr.setAttribute('data-record-index', index)
+    tr.classList.add('table-row-clickable')
+    
+    // Agregar event listener para abrir modal individual
+    tr.addEventListener('click', () => {
+      openIndividualRecordModal(rowData, 'gg')
+    })
+    
     // Se agregan las celdas a la fila asegurando que cada campo tenga su td
     Object.values(rowData).forEach((value) => {
       const td = document.createElement("td")
@@ -2350,6 +2383,215 @@ function getSelectedDataType() {
 }
 
 // ========================================
+// MODAL INDIVIDUAL DE REGISTRO
+// ========================================
+
+/**
+ * Variable para almacenar el registro actualmente editándose en el modal individual
+ */
+let currentIndividualRecord = null
+let currentIndividualDataType = null
+
+/**
+ * Abre el modal individual para editar un registro específico
+ * @param {Object} record - Registro a editar
+ * @param {string} dataType - Tipo de datos ('apk' o 'gg')
+ */
+function openIndividualRecordModal(record, dataType) {
+  currentIndividualRecord = { ...record } // Crear copia para evitar mutaciones
+  currentIndividualDataType = dataType
+  
+  // Actualizar el título del modal según el tipo de datos
+  const carouselTitle = document.querySelector('.carousel-title')
+  if (carouselTitle) {
+    carouselTitle.textContent = `Editar Registro ${dataType.toUpperCase()}`
+  }
+  
+  // Ocultar botones de navegación (anterior/siguiente)
+  const navigationButtons = document.querySelectorAll('#prevRecord, #nextRecord, #skipRecord')
+  navigationButtons.forEach(btn => {
+    btn.style.display = 'none'
+  })
+  
+  // Actualizar el contador para mostrar "1 de 1"
+  const currentIndexSpan = document.querySelector('#currentIndex')
+  const totalRecordsSpan = document.querySelector('#totalRecords')
+  if (currentIndexSpan) currentIndexSpan.textContent = '1'
+  if (totalRecordsSpan) totalRecordsSpan.textContent = '1'
+  
+  // Poblar el selector de conceptos
+  populateIndividualConceptSelector()
+  
+  // Mostrar los datos del registro
+  displayIndividualRecord(record, dataType)
+  
+  // Actualizar el texto del botón de cambio
+  const changeConceptBtn = document.querySelector('#changeConceptBtn')
+  if (changeConceptBtn) {
+    changeConceptBtn.onclick = () => changeIndividualRecordConcept()
+  }
+  
+  // Mostrar el modal (reutilizando verifyCarousel)
+  verifyCarousel.classList.remove('hidden')
+}
+
+/**
+ * Cierra el modal individual
+ */
+function closeIndividualRecordModal() {
+  // Restaurar botones de navegación
+  const navigationButtons = document.querySelectorAll('#prevRecord, #nextRecord, #skipRecord')
+  navigationButtons.forEach(btn => {
+    btn.style.display = ''
+  })
+  
+  // Limpiar variables
+  currentIndividualRecord = null
+  currentIndividualDataType = null
+  
+  // Cerrar modal
+  verifyCarousel.classList.add('hidden')
+}
+
+/**
+ * Pobla el selector de conceptos para el modal individual
+ */
+function populateIndividualConceptSelector() {
+  const concepts = getConceptsFromStorage()
+  const conceptSelect = document.querySelector('#conceptSelect')
+  
+  // Limpiar opciones existentes excepto la primera
+  conceptSelect.innerHTML = '<option value="">Seleccionar concepto...</option>'
+  
+  // Ordenar conceptos alfabéticamente
+  const sortedConcepts = concepts.sort((a, b) => {
+    return a.toLowerCase().localeCompare(b.toLowerCase())
+  })
+  
+  // Agregar conceptos ordenados como opciones
+  sortedConcepts.forEach(concept => {
+    const option = document.createElement('option')
+    option.value = concept
+    option.textContent = concept
+    conceptSelect.appendChild(option)
+  })
+}
+
+/**
+ * Muestra los datos del registro individual en el modal
+ * @param {Object} record - Registro a mostrar
+ * @param {string} dataType - Tipo de datos ('apk' o 'gg')
+ */
+function displayIndividualRecord(record, dataType) {
+  // Actualizar elementos de datos
+  const dataFecha = document.querySelector('#dataFecha')
+  const dataProveedor = document.querySelector('#dataProveedor')
+  const dataFactura = document.querySelector('#dataFactura')
+  const dataConcepto = document.querySelector('#dataConcepto')
+  const dataVuelta = document.querySelector('#dataVuelta')
+  
+  if (dataFecha) dataFecha.textContent = record.fecha || ''
+  if (dataProveedor) dataProveedor.textContent = record.proveedor || ''
+  if (dataFactura) dataFactura.textContent = record.factura || ''
+  if (dataConcepto) dataConcepto.textContent = record.concepto || ''
+  if (dataVuelta) dataVuelta.textContent = record.vuelta || ''
+  
+  // Actualizar la etiqueta de "Vuelta"/"Segmento" según el tipo
+  const vueltaLabel = document.querySelector('.data-row:last-child .data-label')
+  if (vueltaLabel) {
+    vueltaLabel.textContent = dataType === 'gg' ? 'Segmento:' : 'Vuelta:'
+  }
+  
+  // Resetear selector de conceptos
+  const conceptSelect = document.querySelector('#conceptSelect')
+  if (conceptSelect) conceptSelect.value = ''
+  
+  // Validar botón de cambio
+  validateIndividualChangeButton()
+}
+
+/**
+ * Valida si se puede habilitar el botón de cambiar para el modal individual
+ */
+function validateIndividualChangeButton() {
+  const conceptSelect = document.querySelector('#conceptSelect')
+  const changeConceptBtn = document.querySelector('#changeConceptBtn')
+  
+  if (!conceptSelect || !changeConceptBtn || !currentIndividualRecord) return
+  
+  const selectedConcept = conceptSelect.value.trim()
+  const currentConcept = currentIndividualRecord.concepto || ''
+  
+  // Habilitar solo si se seleccionó un concepto diferente al actual
+  changeConceptBtn.disabled = !selectedConcept || selectedConcept === currentConcept
+}
+
+/**
+ * Cambia el concepto del registro individual
+ */
+function changeIndividualRecordConcept() {
+  if (!currentIndividualRecord || !currentIndividualDataType) return
+  
+  const conceptSelect = document.querySelector('#conceptSelect')
+  const selectedConcept = conceptSelect.value.trim()
+  
+  if (!selectedConcept) {
+    showModal('Selecciona un concepto para continuar')
+    return
+  }
+  
+  const currentConcept = currentIndividualRecord.concepto
+  
+  if (selectedConcept === currentConcept) {
+    showModal('El concepto seleccionado es el mismo que el actual')
+    return
+  }
+  
+  // Actualizar el registro en los datos almacenados
+  const data = getCurrentData(currentIndividualDataType)
+  const recordIndex = data.findIndex(record => record.id === currentIndividualRecord.id)
+  
+  if (recordIndex !== -1) {
+    // Actualizar el registro
+    data[recordIndex].concepto = selectedConcept
+    
+    // Guardar en localStorage
+    saveCurrentData(data, currentIndividualDataType)
+    
+    // Actualizar la tabla visible
+    updateTableAfterIndividualChange()
+    
+    // Actualizar filtros si están activos
+    if (originalTableData.length > 0) {
+      // Actualizar datos originales de filtros
+      const originalIndex = originalTableData.findIndex(record => record.id === currentIndividualRecord.id)
+      if (originalIndex !== -1) {
+        originalTableData[originalIndex].concepto = selectedConcept
+      }
+      // Reaplicar filtros
+      applyTableFilters()
+    }
+    
+    // Mostrar confirmación
+    showToast('¡Concepto actualizado correctamente!')
+    
+    // Cerrar modal
+    closeIndividualRecordModal()
+  } else {
+    showModal('Error: No se pudo encontrar el registro para actualizar')
+  }
+}
+
+/**
+ * Actualiza la tabla después de cambiar un concepto individual
+ */
+function updateTableAfterIndividualChange() {
+  const data = getCurrentData(currentIndividualDataType)
+  const headers = getHeadersForDataType(currentIndividualDataType)
+  generateTableFromProcessedData(resultTable, data, headers, currentIndividualDataType)
+}
+
+// ========================================
 // SISTEMA DE FILTROS DE TABLA
 // ========================================
 
@@ -2472,8 +2714,20 @@ function updateTableWithFilteredData(filteredData) {
   }
   
   // Crear filas con datos filtrados
-  filteredData.forEach(record => {
+  filteredData.forEach((record, index) => {
     const tr = document.createElement('tr')
+    
+    // Agregar atributos y event listener para filas clickeables
+    tr.setAttribute('data-record-id', record.id)
+    tr.setAttribute('data-record-index', index)
+    tr.classList.add('table-row-clickable')
+    
+    // Determinar tipo de datos actual para el modal
+    const currentDataType = getSelectedDataType()
+    tr.addEventListener('click', () => {
+      openIndividualRecordModal(record, currentDataType)
+    })
+    
     Object.values(record).forEach(value => {
       const td = document.createElement('td')
       // Asegurar que siempre haya contenido, aunque sea vacío

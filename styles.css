@@ -814,8 +814,44 @@ body {
   color: #3a86ff;
 }
 
-.result-table tr:hover {
-  background-color: #f9f9f9;
+.result-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.result-table tbody tr:hover {
+  background-color: #f8f9fa;
+  cursor: pointer;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.result-table thead tr:hover {
+  background-color: transparent;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Estilos para filas clickeables */
+.table-row-clickable {
+  position: relative;
+}
+
+.table-row-clickable:hover::after {
+  content: '✏️ Editar';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #3a86ff;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.9;
+  pointer-events: none;
+  z-index: 10;
 }
 
 /* Aplicar estilos para las últimas 3 celdas de cada fila en el cuerpo de la tabla */
