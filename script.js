@@ -1445,13 +1445,13 @@ function escapeHtml(text) {
 }
 
 /**
- * Muestra un diálogo de confirmación
- * @param {string} message Mensaje a mostrar
- * @param {Function} onConfirm Función a ejecutar si se confirma
+ * Ejecuta directamente la función de confirmación (sin mostrar diálogo)
+ * @param {string} message Mensaje a mostrar (solo para documentación)
+ * @param {Function} onConfirm Función a ejecutar
  */
 function showConfirmDialog(message, onConfirm) {
-  const confirmed = window.confirm(message)
-  if (confirmed && typeof onConfirm === "function") {
+  // Ejecutar directamente sin confirmación - asumimos que el usuario siempre confirma
+  if (typeof onConfirm === "function") {
     onConfirm()
   }
 }
@@ -2114,14 +2114,7 @@ function executeMassReplacement() {
     return
   }
   
-  // Confirmar acción
-  const confirmed = window.confirm(
-    `¿Estás seguro de que quieres reemplazar ${selectedConcepts.length} concepto(s) con "${targetConcept}"?\n\n` +
-    `Esta acción no se puede deshacer.`
-  )
-  
-  if (!confirmed) return
-  
+  // Ejecutar directamente sin confirmación - asumimos que el usuario siempre confirma
   try {
     // Obtener datos actuales
     const selectedOption = document.querySelector('input[name="step"]:checked')?.value
