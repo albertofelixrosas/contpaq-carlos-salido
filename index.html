@@ -181,14 +181,30 @@
             </form>
         </section>
 
-         <!-- Sección de tabla (oculta inicialmente)  -->
-        <section id="tableSection" class="table-section hidden">
+         <!-- Sección de tabla (siempre visible)  -->
+        <section id="tableSection" class="table-section">
             <div class="table-header">
-                <button id="verifyBtn" class="btn-verify">Verificar</button>
-                <button id="copyBtn" class="btn-copy">Copiar</button>
+                <div class="table-info">
+                    <h2 id="tableTitle" class="table-title">Datos APK</h2>
+                    <span id="tableDescription" class="table-description">Visualización de datos procesados</span>
+                </div>
+                <div id="tableActions" class="table-actions hidden">
+                    <button id="verifyBtn" class="btn-verify">Verificar</button>
+                    <button id="copyBtn" class="btn-copy">Copiar</button>
+                </div>
             </div>
             <div class="table-container">
-                <table id="resultTable" class="result-table">
+                <!-- Estado vacío -->
+                <div id="emptyTableState" class="empty-table-state">
+                    <div class="empty-table-icon">📊</div>
+                    <h3 class="empty-table-title">No hay datos cargados</h3>
+                    <p class="empty-table-message">Procesa un archivo para ver los datos en esta tabla</p>
+                    <div class="empty-table-hint">
+                        <small>Tipo actual: <span id="currentTableType">APK</span></small>
+                    </div>
+                </div>
+                <!-- Tabla de datos -->
+                <table id="resultTable" class="result-table hidden">
                      <!-- La tabla se llenará dinámicamente con JavaScript  -->
                 </table>
             </div>

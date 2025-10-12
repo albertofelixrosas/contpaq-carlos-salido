@@ -58,6 +58,13 @@ const replacementSummary = document.querySelector("#replacementSummary")
 const previewReplacementBtn = document.querySelector("#previewReplacementBtn")
 const executeReplacementBtn = document.querySelector("#executeReplacementBtn")
 
+// Elementos del estado de tabla
+const tableTitle = document.querySelector("#tableTitle")
+const tableDescription = document.querySelector("#tableDescription")
+const tableActions = document.querySelector("#tableActions")
+const emptyTableState = document.querySelector("#emptyTableState")
+const currentTableType = document.querySelector("#currentTableType")
+
 // Elementos del panel flotante de tipo de datos
 const dataTypeSelector = document.querySelector("#dataTypeSelector")
 
@@ -149,6 +156,7 @@ copyBtn.addEventListener("click", () => {
 document.addEventListener("DOMContentLoaded", () => {
   initializeConceptsManager()
   updateMassReplacementVisibility()
+  initializeTableDisplay()
 })
 
 // Eventos del componente de conceptos
@@ -262,6 +270,7 @@ executeReplacementBtn.addEventListener("click", () => {
 document.querySelectorAll('input[name="step"]').forEach(radio => {
   radio.addEventListener('change', () => {
     updateMassReplacementVisibility()
+    updateTableDisplay()
   })
 })
 
@@ -386,6 +395,8 @@ function getHeadersForDataType(dataType) {
 async function generateResultsTableForAPK() {
   try {
     await processExcelAndGenerateTable(fileInput.files[0], "apk", resultTable)
+    // Actualizar visualización de tabla
+    updateTableDisplay()
   } catch (error) {
     console.error("Error generando tabla APK:", error)
     showModal("Error al procesar el archivo APK")
@@ -398,6 +409,8 @@ async function generateResultsTableForAPK() {
 async function generateResultsTableForGG() {
   try {
     await processExcelAndGenerateTable(fileInput.files[0], "gg", resultTable)
+    // Actualizar visualización de tabla
+    updateTableDisplay()
   } catch (error) {
     console.error("Error generando tabla GG:", error)
     showModal("Error al procesar el archivo GG")
@@ -804,7 +817,18 @@ function createObjectFromRow(row) {
  * Formato: filas separadas por \n, columnas separadas por \t
  */
 function copyTableToClipboard() {
+  // Verificar si hay datos para copiar
+  if (resultTable.classList.contains("hidden")) {
+    showModal("No hay datos para copiar. Procesa un archivo primero.")
+    return
+  }
+
   const rows = resultTable.querySelectorAll("tr")
+  if (rows.length === 0) {
+    showModal("La tabla está vacía. No hay datos para copiar.")
+    return
+  }
+
   let tableText = ""
 
   rows.forEach((row, index) => {
@@ -929,17 +953,13 @@ function parseDateString(dateString) {
  */
 function updateSegmentEditorVisibility() {
   const segmentEditor = document.querySelector(".segment-editor")
-  const noDataComponent = document.querySelector(".no-data")
-
   const segmentList = JSON.parse(localStorage.getItem("segmentList")) || []
 
   if (segmentList.length > 0) {
     segmentEditor.classList.remove("hidden")
-    noDataComponent.classList.add("hidden")
     populateSegmentForm()
   } else {
     segmentEditor.classList.add("hidden")
-    noDataComponent.classList.remove("hidden")
   }
 }
 
@@ -2057,4 +2077,68 @@ function debugMassReplacementComponent() {
   }
   
   console.log("============================================")
+}
+
+// ========================================
+// GESTIÓN DE ESTADOS DE TABLA
+// ========================================
+
+/**
+ * Actualiza la visualización de la tabla según el tipo de datos seleccionado
+ */
+function updateTableDisplay() {
+  const selectedOption = document.querySelector('input[name="step"]:checked')?.value
+  const data = getProcessedDataFromStorage(selectedOption)
+  
+  // Actualizar información del encabezado
+  const dataTypeText = selectedOption === "apk" ? "APK" : "GG"
+  const dataTypeDescription = selectedOption === "apk" ? "Datos de archivos APK procesados" : "Datos de archivos GG procesados"
+  
+  tableTitle.textContent = `Datos ${dataTypeText}`
+  tableDescription.textContent = dataTypeDescription
+  currentTableType.textContent = dataTypeText
+  
+  if (data && data.length > 0) {
+    showTableWithData(data, selectedOption)
+  } else {
+    showEmptyTableState()
+  }
+}
+
+/**
+ * Muestra la tabla con datos
+ * @param {Array<Object>} data - Datos a mostrar
+ * @param {string} dataType - Tipo de datos ("apk" o "gg")
+ */
+function showTableWithData(data, dataType) {
+  // Ocultar estado vacío
+  emptyTableState.classList.add("hidden")
+  
+  // Mostrar tabla y acciones
+  resultTable.classList.remove("hidden")
+  tableActions.classList.remove("hidden")
+  
+  // Generar contenido de la tabla
+  const headers = getHeadersForDataType(dataType)
+  generateTableFromProcessedData(resultTable, data, headers, dataType)
+}
+
+/**
+ * Muestra el estado vacío de la tabla
+ */
+function showEmptyTableState() {
+  // Mostrar estado vacío
+  emptyTableState.classList.remove("hidden")
+  
+  // Ocultar tabla y acciones
+  resultTable.classList.add("hidden")
+  tableActions.classList.add("hidden")
+}
+
+/**
+ * Inicializa el estado de la tabla al cargar la página
+ */
+function initializeTableDisplay() {
+  // La tabla siempre está visible, solo actualizamos su contenido
+  updateTableDisplay()
 }
