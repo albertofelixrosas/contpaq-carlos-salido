@@ -980,6 +980,7 @@ body {
   font-size: 0.85rem;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  font-family: Poppins, sans-serif;
 }
 
 .btn-clear-filters:hover {
@@ -1012,6 +1013,7 @@ body {
   border-radius: 4px;
   font-size: 0.9rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: Poppins, sans-serif;
 }
 
 .filter-input:focus,
