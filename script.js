@@ -46,6 +46,18 @@ let apkDataArray = []
 // TODO: aplicar cambios similares a ggDataArray
 let ggDataArray = []
 
+// Elementos del componente de sustitución masiva
+const massReplacementManager = document.querySelector("#massReplacementManager")
+const currentDataType = document.querySelector("#currentDataType")
+const totalRecordsCount = document.querySelector("#totalRecordsCount")
+const conceptsCheckboxList = document.querySelector("#conceptsCheckboxList")
+const selectAllConceptsBtn = document.querySelector("#selectAllConcepts")
+const clearAllSelectionBtn = document.querySelector("#clearAllSelection")
+const targetConceptSelect = document.querySelector("#targetConceptSelect")
+const replacementSummary = document.querySelector("#replacementSummary")
+const previewReplacementBtn = document.querySelector("#previewReplacementBtn")
+const executeReplacementBtn = document.querySelector("#executeReplacementBtn")
+
 // ========================================
 // EVENTOS
 // ========================================
@@ -133,6 +145,7 @@ copyBtn.addEventListener("click", () => {
 // Evento mostrar el componente de edición de segmentos si hay datos en localStorage
 document.addEventListener("DOMContentLoaded", () => {
   initializeConceptsManager()
+  updateMassReplacementVisibility()
 })
 
 // Eventos del componente de conceptos
@@ -220,6 +233,34 @@ document.addEventListener("keydown", (e) => {
 
 // Evento para actualizar la visibilidad del componente de edición de segmentos cuando se actualice el localStorage
 updateSegmentEditorVisibility()
+
+// Eventos del componente de sustitución masiva
+selectAllConceptsBtn.addEventListener("click", () => {
+  selectAllConcepts()
+})
+
+clearAllSelectionBtn.addEventListener("click", () => {
+  clearAllConceptSelection()
+})
+
+targetConceptSelect.addEventListener("change", () => {
+  updateReplacementSummary()
+})
+
+previewReplacementBtn.addEventListener("click", () => {
+  previewMassReplacement()
+})
+
+executeReplacementBtn.addEventListener("click", () => {
+  executeMassReplacement()
+})
+
+// Eventos para cambios en los radio buttons
+document.querySelectorAll('input[name="step"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    updateMassReplacementVisibility()
+  })
+})
 
 // ========================================
 // FUNCIONES DE MODAL
@@ -442,6 +483,9 @@ async function processExcelAndGenerateTable(file, dataType, tableElement) {
     // 3. Generar tabla
     const headers = getHeadersForDataType(dataType)
     generateTableFromProcessedData(tableElement, processedResult.processedData, headers, dataType)
+    
+    // 4. Actualizar componente de sustitución masiva
+    updateMassReplacementVisibility()
     
     return processedResult.processedData
     
@@ -1642,4 +1686,372 @@ function showToast(message = "¡Concepto actualizado correctamente!") {
     hideToast()
     toastMessage.textContent = originalMessage
   }, 3000)
+}
+
+// ========================================
+// GESTIÓN DE SUSTITUCIÓN MASIVA
+// ========================================
+
+/**
+ * Actualiza la visibilidad del componente de sustitución masiva
+ */
+function updateMassReplacementVisibility() {
+  const selectedOption = document.querySelector('input[name="step"]:checked')?.value
+  const data = getProcessedDataFromStorage(selectedOption)
+  
+  if (data && data.length > 0) {
+    massReplacementManager.classList.remove("hidden")
+    updateMassReplacementData(selectedOption, data)
+  } else {
+    massReplacementManager.classList.add("hidden")
+    resetMassReplacementComponent()
+  }
+}
+
+/**
+ * Resetea el componente de sustitución masiva a su estado inicial
+ */
+function resetMassReplacementComponent() {
+  currentDataType.textContent = "-"
+  totalRecordsCount.textContent = "0"
+  conceptsCheckboxList.innerHTML = `
+    <div class="empty-concepts-data">
+      <p class="empty-message">No hay datos cargados</p>
+      <p class="empty-hint">Procesa un archivo para ver los conceptos disponibles</p>
+    </div>
+  `
+  targetConceptSelect.innerHTML = '<option value="">Seleccionar concepto destino...</option>'
+  replacementSummary.innerHTML = '<p class="summary-text">Selecciona conceptos para ver el resumen</p>'
+  executeReplacementBtn.disabled = true
+}
+
+/**
+ * Actualiza los datos del componente de sustitución masiva
+ * @param {string} dataType - Tipo de datos ("apk" o "gg")
+ * @param {Array<Object>} data - Datos procesados
+ */
+function updateMassReplacementData(dataType, data) {
+  // Actualizar información general
+  currentDataType.textContent = dataType.toUpperCase()
+  totalRecordsCount.textContent = data.length
+  
+  // Obtener conceptos únicos y sus conteos
+  const conceptCounts = getConceptCounts(data)
+  
+  // Poblar lista de checkboxes de conceptos
+  populateConceptCheckboxes(conceptCounts)
+  
+  // Poblar selector de concepto destino
+  populateTargetConceptSelector()
+  
+  // Limpiar selección anterior
+  clearAllConceptSelection()
+}
+
+/**
+ * Obtiene los conceptos únicos y sus conteos de los datos
+ * @param {Array<Object>} data - Datos procesados
+ * @returns {Map<string, number>} - Mapa de conceptos y sus conteos
+ */
+function getConceptCounts(data) {
+  const conceptCounts = new Map()
+  
+  data.forEach(record => {
+    const concept = record.concepto || ""
+    if (concept.trim()) {
+      conceptCounts.set(concept, (conceptCounts.get(concept) || 0) + 1)
+    }
+  })
+  
+  return conceptCounts
+}
+
+/**
+ * Pobla la lista de checkboxes con los conceptos disponibles
+ * @param {Map<string, number>} conceptCounts - Mapa de conceptos y conteos
+ */
+function populateConceptCheckboxes(conceptCounts) {
+  if (conceptCounts.size === 0) {
+    conceptsCheckboxList.innerHTML = `
+      <div class="empty-concepts-data">
+        <p class="empty-message">No se encontraron conceptos</p>
+        <p class="empty-hint">Los datos procesados no contienen conceptos válidos</p>
+      </div>
+    `
+    return
+  }
+  
+  // Convertir a array y ordenar alfabéticamente
+  const sortedConcepts = Array.from(conceptCounts.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+  
+  const checkboxHTML = sortedConcepts.map(([concept, count], index) => `
+    <div class="concept-checkbox-item" data-concept="${escapeHtml(concept)}">
+      <input 
+        type="checkbox" 
+        id="conceptCheck_${index}" 
+        class="concept-checkbox"
+        value="${escapeHtml(concept)}"
+      >
+      <label for="conceptCheck_${index}" class="concept-checkbox-label">
+        ${escapeHtml(concept)}
+      </label>
+      <span class="concept-count">${count}</span>
+    </div>
+  `).join("")
+  
+  conceptsCheckboxList.innerHTML = checkboxHTML
+  
+  // Agregar event listeners a los checkboxes
+  conceptsCheckboxList.querySelectorAll('.concept-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', () => {
+      updateCheckboxItemStyle(checkbox)
+      updateReplacementSummary()
+    })
+  })
+}
+
+/**
+ * Actualiza el estilo del item del checkbox según su estado
+ * @param {HTMLInputElement} checkbox - Elemento checkbox
+ */
+function updateCheckboxItemStyle(checkbox) {
+  const item = checkbox.closest('.concept-checkbox-item')
+  if (checkbox.checked) {
+    item.classList.add('selected')
+  } else {
+    item.classList.remove('selected')
+  }
+}
+
+/**
+ * Pobla el selector de concepto destino con conceptos guardados
+ */
+function populateTargetConceptSelector() {
+  const savedConcepts = getConceptsFromStorage()
+  
+  // Limpiar opciones existentes excepto la primera
+  targetConceptSelect.innerHTML = '<option value="">Seleccionar concepto destino...</option>'
+  
+  // Ordenar conceptos alfabéticamente
+  const sortedConcepts = savedConcepts.sort((a, b) => a.localeCompare(b))
+  
+  sortedConcepts.forEach(concept => {
+    const option = document.createElement('option')
+    option.value = concept
+    option.textContent = concept
+    targetConceptSelect.appendChild(option)
+  })
+}
+
+/**
+ * Selecciona todos los conceptos disponibles
+ */
+function selectAllConcepts() {
+  const checkboxes = conceptsCheckboxList.querySelectorAll('.concept-checkbox')
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = true
+    updateCheckboxItemStyle(checkbox)
+  })
+  updateReplacementSummary()
+}
+
+/**
+ * Limpia la selección de todos los conceptos
+ */
+function clearAllConceptSelection() {
+  const checkboxes = conceptsCheckboxList.querySelectorAll('.concept-checkbox')
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = false
+    updateCheckboxItemStyle(checkbox)
+  })
+  updateReplacementSummary()
+}
+
+/**
+ * Obtiene los conceptos seleccionados
+ * @returns {Array<string>} - Array de conceptos seleccionados
+ */
+function getSelectedConcepts() {
+  const checkboxes = conceptsCheckboxList.querySelectorAll('.concept-checkbox:checked')
+  return Array.from(checkboxes).map(checkbox => checkbox.value)
+}
+
+/**
+ * Actualiza el resumen de la sustitución
+ */
+function updateReplacementSummary() {
+  const selectedConcepts = getSelectedConcepts()
+  const targetConcept = targetConceptSelect.value
+  
+  if (selectedConcepts.length === 0) {
+    replacementSummary.innerHTML = '<p class="summary-text">Selecciona conceptos para reemplazar</p>'
+    executeReplacementBtn.disabled = true
+    return
+  }
+  
+  if (!targetConcept) {
+    replacementSummary.innerHTML = `
+      <p class="summary-text">
+        ${selectedConcepts.length} concepto(s) seleccionado(s). 
+        <br>Selecciona un concepto destino para continuar.
+      </p>
+    `
+    executeReplacementBtn.disabled = true
+    return
+  }
+  
+  // Validar que el concepto destino no esté en los conceptos origen
+  if (selectedConcepts.includes(targetConcept)) {
+    replacementSummary.innerHTML = `
+      <p class="summary-text" style="color: #dc3545;">
+        <strong>Error:</strong> El concepto destino no puede ser uno de los conceptos a reemplazar.
+        <br>Selecciona un concepto diferente.
+      </p>
+    `
+    executeReplacementBtn.disabled = true
+    return
+  }
+  
+  // Calcular total de registros afectados
+  const selectedOption = document.querySelector('input[name="step"]:checked')?.value
+  const data = getProcessedDataFromStorage(selectedOption)
+  const affectedRecords = data.filter(record => selectedConcepts.includes(record.concepto)).length
+  
+  replacementSummary.innerHTML = `
+    <div class="summary-active">
+      <p><strong>Resumen de sustitución:</strong></p>
+      <p>• Conceptos a reemplazar: ${selectedConcepts.length}</p>
+      <p>• Registros afectados: ${affectedRecords}</p>
+      <p>• Concepto destino: <em>${targetConcept}</em></p>
+    </div>
+  `
+  
+  executeReplacementBtn.disabled = false
+}
+
+/**
+ * Muestra una vista previa de los cambios que se van a realizar
+ */
+function previewMassReplacement() {
+  const selectedConcepts = getSelectedConcepts()
+  const targetConcept = targetConceptSelect.value
+  
+  if (selectedConcepts.length === 0 || !targetConcept) {
+    showModal("Selecciona conceptos origen y concepto destino para ver la vista previa")
+    return
+  }
+  
+  const selectedOption = document.querySelector('input[name="step"]:checked')?.value
+  const data = getProcessedDataFromStorage(selectedOption)
+  const affectedRecords = data.filter(record => selectedConcepts.includes(record.concepto))
+  
+  let previewHTML = `
+    <div style="text-align: left; max-height: 300px; overflow-y: auto;">
+      <h4>Vista Previa de Cambios (${affectedRecords.length} registros)</h4>
+      <hr style="margin: 10px 0;">
+  `
+  
+  const previewLimit = 10 // Mostrar máximo 10 registros en preview
+  affectedRecords.slice(0, previewLimit).forEach((record, index) => {
+    previewHTML += `
+      <p style="margin: 5px 0; padding: 5px; background-color: #f8f9fa; border-radius: 3px;">
+        <strong>${index + 1}.</strong> 
+        <span style="color: #dc3545; text-decoration: line-through;">${record.concepto}</span>
+        →
+        <span style="color: #28a745; font-weight: bold;">${targetConcept}</span>
+        <br><small style="color: #666;">Proveedor: ${record.proveedor} | Fecha: ${record.fecha}</small>
+      </p>
+    `
+  })
+  
+  if (affectedRecords.length > previewLimit) {
+    previewHTML += `<p style="text-align: center; color: #666; font-style: italic;">... y ${affectedRecords.length - previewLimit} registros más</p>`
+  }
+  
+  previewHTML += `</div>`
+  
+  showModal(previewHTML)
+}
+
+/**
+ * Ejecuta la sustitución masiva
+ */
+function executeMassReplacement() {
+  const selectedConcepts = getSelectedConcepts()
+  const targetConcept = targetConceptSelect.value
+  
+  if (selectedConcepts.length === 0 || !targetConcept) {
+    showModal("Selecciona conceptos origen y concepto destino para ejecutar la sustitución")
+    return
+  }
+  
+  // Confirmar acción
+  const confirmed = window.confirm(
+    `¿Estás seguro de que quieres reemplazar ${selectedConcepts.length} concepto(s) con "${targetConcept}"?\n\n` +
+    `Esta acción no se puede deshacer.`
+  )
+  
+  if (!confirmed) return
+  
+  try {
+    // Obtener datos actuales
+    const selectedOption = document.querySelector('input[name="step"]:checked')?.value
+    const data = getProcessedDataFromStorage(selectedOption)
+    
+    // Realizar sustitución
+    let replacedCount = 0
+    data.forEach(record => {
+      if (selectedConcepts.includes(record.concepto)) {
+        record.concepto = targetConcept
+        replacedCount++
+      }
+    })
+    
+    // Guardar datos actualizados en localStorage
+    if (selectedOption === "apk") {
+      localStorage.setItem('apkData', JSON.stringify(data))
+    } else if (selectedOption === "gg") {
+      localStorage.setItem('ggData', JSON.stringify(data))
+    }
+    
+    // Actualizar tabla si está visible
+    if (!tableSection.classList.contains("hidden")) {
+      const headers = getHeadersForDataType(selectedOption)
+      generateTableFromProcessedData(resultTable, data, headers, selectedOption)
+    }
+    
+    // Actualizar componente de sustitución masiva
+    updateMassReplacementData(selectedOption, data)
+    
+    // Mostrar confirmación
+    showToast(`¡Sustitución completada! ${replacedCount} registros actualizados.`)
+    
+  } catch (error) {
+    console.error("Error ejecutando sustitución masiva:", error)
+    showModal("Error al ejecutar la sustitución. Por favor, intenta de nuevo.")
+  }
+}
+
+/**
+ * Función de diagnóstico para verificar el estado del componente de sustitución masiva
+ * Solo para desarrollo/debug
+ */
+function debugMassReplacementComponent() {
+  console.log("=== DEBUG: Componente de Sustitución Masiva ===")
+  
+  const selectedOption = document.querySelector('input[name="step"]:checked')?.value
+  const data = getProcessedDataFromStorage(selectedOption)
+  
+  console.log("Tipo de datos seleccionado:", selectedOption)
+  console.log("Datos cargados:", data ? data.length : 0, "registros")
+  console.log("Componente visible:", !massReplacementManager.classList.contains("hidden"))
+  
+  if (data && data.length > 0) {
+    const conceptCounts = getConceptCounts(data)
+    console.log("Conceptos únicos encontrados:", conceptCounts.size)
+    console.log("Conceptos guardados disponibles:", getConceptsFromStorage().length)
+  }
+  
+  console.log("============================================")
 }

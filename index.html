@@ -67,6 +67,79 @@
             </div>
         </section>
 
+         <!-- Componente de sustitución masiva de conceptos -->
+        <section id="massReplacementManager" class="mass-replacement-manager hidden">
+            <h2 class="mass-replacement-title">Sustitución Masiva de Conceptos</h2>
+            
+            <div class="mass-replacement-info">
+                <div class="data-type-indicator">
+                    <span class="data-type-label">Trabajando con datos:</span>
+                    <span id="currentDataType" class="data-type-value">-</span>
+                </div>
+                <div class="records-info">
+                    <span class="records-label">Total de registros:</span>
+                    <span id="totalRecordsCount" class="records-count">0</span>
+                </div>
+            </div>
+
+            <div class="mass-replacement-controls">
+                <!-- Panel de selección de conceptos origen -->
+                <div class="selection-panel">
+                    <h3 class="panel-title">1. Conceptos a Reemplazar</h3>
+                    <div class="concepts-selector-container">
+                        <div class="selector-header">
+                            <button id="selectAllConcepts" class="btn-select-all" type="button">
+                                Seleccionar Todos
+                            </button>
+                            <button id="clearAllSelection" class="btn-clear-selection" type="button">
+                                Limpiar Selección
+                            </button>
+                        </div>
+                        <div id="conceptsCheckboxList" class="concepts-checkbox-list">
+                            <div class="empty-concepts-data">
+                                <p class="empty-message">No hay datos cargados</p>
+                                <p class="empty-hint">Procesa un archivo para ver los conceptos disponibles</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel de concepto destino -->
+                <div class="replacement-panel">
+                    <h3 class="panel-title">2. Concepto de Reemplazo</h3>
+                    <div class="replacement-selector">
+                        <label for="targetConceptSelect" class="target-label">
+                            Selecciona el concepto destino:
+                        </label>
+                        <select id="targetConceptSelect" class="target-concept-select">
+                            <option value="">Seleccionar concepto...</option>
+                        </select>
+                        <div class="target-info">
+                            <small class="info-text">
+                                Este concepto reemplazará a todos los conceptos seleccionados arriba
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel de acciones -->
+                <div class="actions-panel">
+                    <h3 class="panel-title">3. Realizar Sustitución</h3>
+                    <div class="replacement-summary" id="replacementSummary">
+                        <p class="summary-text">Selecciona conceptos para ver el resumen</p>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="previewReplacementBtn" class="btn-preview" type="button">
+                            👀 Vista Previa
+                        </button>
+                        <button id="executeReplacementBtn" class="btn-execute" type="button" disabled>
+                            🔄 Ejecutar Sustitución
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
          <!-- Componente de edición de segmentos -->
         <section id="segmentEditor" class="segment-editor hidden">
             <h2 class="segment-title">Editar Segmentos</h2>

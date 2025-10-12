@@ -326,6 +326,304 @@ body {
 }
 
 /* ========================================
+   SUSTITUCIÓN MASIVA DE CONCEPTOS
+   ======================================== */
+
+.mass-replacement-manager {
+  background-color: #fff;
+  padding: 2rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  animation: fadeIn 0.8s ease-in;
+}
+
+.mass-replacement-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #ff6b35;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.mass-replacement-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border-left: 4px solid #ff6b35;
+}
+
+.data-type-indicator, .records-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.data-type-label, .records-label {
+  font-weight: 500;
+  color: #666;
+}
+
+.data-type-value {
+  font-weight: 600;
+  color: #ff6b35;
+  text-transform: uppercase;
+}
+
+.records-count {
+  font-weight: 600;
+  color: #3a86ff;
+}
+
+.mass-replacement-controls {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 1.5rem;
+}
+
+.selection-panel, .replacement-panel, .actions-panel {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  width: 100%;
+}
+
+.panel-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 0.5rem;
+}
+
+.selector-header {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.btn-select-all, .btn-clear-selection {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.btn-select-all {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.btn-select-all:hover {
+  background-color: #218838;
+  transform: translateY(-1px);
+}
+
+.btn-clear-selection {
+  background-color: #6c757d;
+  color: #fff;
+}
+
+.btn-clear-selection:hover {
+  background-color: #5a6268;
+  transform: translateY(-1px);
+}
+
+.concepts-checkbox-list {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 1rem;
+  background-color: #fff;
+}
+
+.empty-concepts-data {
+  text-align: center;
+  color: #999;
+  padding: 2rem 1rem;
+}
+
+.empty-concepts-data .empty-message {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.empty-concepts-data .empty-hint {
+  font-size: 0.85rem;
+}
+
+.concept-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.concept-checkbox-item:hover {
+  background-color: #e9ecef;
+}
+
+.concept-checkbox-item.selected {
+  background-color: #e8f4fd;
+  border-color: #3a86ff;
+}
+
+.concept-checkbox {
+  margin: 0;
+  cursor: pointer;
+}
+
+.concept-checkbox-label {
+  flex: 1;
+  font-size: 0.95rem;
+  color: #333;
+  cursor: pointer;
+  word-wrap: break-word;
+}
+
+.concept-count {
+  font-size: 0.8rem;
+  color: #666;
+  font-weight: 500;
+  background-color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+}
+
+.replacement-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.target-label {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.target-concept-select {
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 2px solid #dee2e6;
+  border-radius: 6px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: border-color 0.3s ease;
+  font-family: "Poppins", sans-serif;
+}
+
+.target-concept-select:focus {
+  outline: none;
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.target-info {
+  margin-top: 0.5rem;
+}
+
+.info-text {
+  color: #666;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.replacement-summary {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  margin-bottom: 1.5rem;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+}
+
+.summary-text {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+  font-style: italic;
+}
+
+.summary-active {
+  color: #333;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn-preview, .btn-execute {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-preview {
+  background-color: #17a2b8;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(23, 162, 184, 0.3);
+}
+
+.btn-preview:hover {
+  background-color: #138496;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(23, 162, 184, 0.4);
+}
+
+.btn-execute {
+  background-color: #ff6b35;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(255, 107, 53, 0.3);
+}
+
+.btn-execute:hover {
+  background-color: #e55a2e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(255, 107, 53, 0.4);
+}
+
+.btn-execute:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ========================================
    SECCIÓN DE CARGA
    ======================================== */
 
@@ -672,6 +970,39 @@ body {
 
   .concept-actions {
     justify-content: center;
+  }
+
+  .mass-replacement-manager {
+    padding: 1.5rem;
+  }
+
+  .mass-replacement-info {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .mass-replacement-controls {
+    gap: 1rem;
+  }
+
+  .selector-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .btn-select-all,
+  .btn-clear-selection {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .concepts-checkbox-list {
+    max-height: 200px;
+  }
+
+  .action-buttons {
+    gap: 0.5rem;
   }
 
   .carousel-container {
