@@ -263,7 +263,7 @@ conceptSelect.addEventListener("change", () => {
 // Eventos de teclado para el carrusel
 document.addEventListener("keydown", (e) => {
   if (!verifyCarousel.classList.contains("hidden")) {
-    switch(e.key) {
+    switch (e.key) {
       case "ArrowLeft":
         e.preventDefault()
         navigateRecord(-1)
@@ -440,7 +440,7 @@ function formatCurrency(value) {
     style: "currency",
     currency: "MXN",
   });
-  
+
   const numericValue = parseFloat(value) || 0;
   return numberFormatter.format(numericValue);
 }
@@ -452,28 +452,28 @@ function formatCurrency(value) {
  */
 function updateTableTotals(allData, filteredData) {
   if (!tableTotals || !totalGeneral || !totalFiltrado) return;
-  
+
   const numberFormatter = new Intl.NumberFormat("es-MX", {
     style: "currency",
     currency: "MXN",
   });
-  
+
   // Calcular total general
   const totalGeneralValue = allData.reduce((sum, record) => {
     const importe = parseFloat(record.importe) || 0;
     return sum + importe;
   }, 0);
-  
+
   // Calcular total filtrado
   const totalFiltradoValue = filteredData.reduce((sum, record) => {
     const importe = parseFloat(record.importe) || 0;
     return sum + importe;
   }, 0);
-  
+
   // Actualizar elementos del DOM
   totalGeneral.textContent = numberFormatter.format(totalGeneralValue);
   totalFiltrado.textContent = numberFormatter.format(totalFiltradoValue);
-  
+
   // Mostrar la sección de totales si hay datos
   if (allData.length > 0) {
     tableTotals.classList.remove("hidden");
@@ -488,21 +488,21 @@ function updateTableTotals(allData, filteredData) {
  */
 function updateProrrateoTotals(prorrateoData) {
   if (!prorrateoTotals || !totalProrrateo) return;
-  
+
   const numberFormatter = new Intl.NumberFormat("es-MX", {
     style: "currency",
     currency: "MXN",
   });
-  
+
   // Calcular total del prorrateo
   const totalProrrateoValue = prorrateoData.reduce((sum, record) => {
     const importe = parseFloat(record.importe) || 0;
     return sum + importe;
   }, 0);
-  
+
   // Actualizar elemento del DOM
   totalProrrateo.textContent = numberFormatter.format(totalProrrateoValue);
-  
+
   // Mostrar la sección de totales si hay datos
   if (prorrateoData.length > 0) {
     prorrateoTotals.classList.remove("hidden");
@@ -572,18 +572,18 @@ function createTableHeader(headers, dataType = 'apk') {
 
   // Campos que permiten ordenamiento
   const sortableFields = ['Fecha', 'Proveedor', 'Importe', 'Concepto']
-  
+
   headers.forEach((header, index) => {
     const th = document.createElement("th")
-    
+
     if (sortableFields.includes(header)) {
       // Hacer la cabecera clickeable
       th.classList.add('sortable-header')
       th.textContent = header
-      
+
       // Agregar evento de click para ordenamiento
       th.addEventListener('click', handleHeaderClick)
-      
+
       // Agregar atributos data para identificar el campo y tipo
       th.setAttribute('data-field', header)
       th.setAttribute('data-type', dataType)
@@ -591,7 +591,7 @@ function createTableHeader(headers, dataType = 'apk') {
       th.textContent = header
       th.classList.add('non-sortable-header')
     }
-    
+
     headerRow.appendChild(th)
   })
 
@@ -608,7 +608,7 @@ function createTableHeader(headers, dataType = 'apk') {
 function clearAndSetupTable(tableElement, headers, dataType = 'apk') {
   // Limpiar tabla existente
   tableElement.innerHTML = ""
-  
+
   // Crear y agregar encabezados
   const thead = createTableHeader(headers, dataType)
   tableElement.appendChild(thead)
@@ -624,7 +624,7 @@ function getHeadersForDataType(dataType) {
   const baseHeaders = ["Fecha", "Egresos", "Folio", "Proveedor", "Factura", "Importe", "Concepto"]
   const typeSpecificHeader = dataType === "apk" ? "Vuelta" : "Segmento"
   const endHeaders = ["Mes", "Año"]
-  
+
   return [...idHeader, ...baseHeaders, typeSpecificHeader, ...endHeaders]
 }
 
@@ -667,10 +667,10 @@ function generateTableFromProcessedData(tableElement, processedData, headers, da
   try {
     // 1. Configurar tabla
     clearAndSetupTable(tableElement, headers, dataType)
-    
+
     // 2. Crear cuerpo de tabla según el tipo
     let tbody
-    if (dataType === "apk") {
+    if (dataType === "apk" || dataType === "epk") {
       tbody = createApkTableBody(processedData)
     } else if (dataType === "gg") {
       tbody = createGgTableBody(processedData)
@@ -678,21 +678,21 @@ function generateTableFromProcessedData(tableElement, processedData, headers, da
       // Función genérica para otros tipos de datos
       tbody = createGenericTableBody(processedData)
     }
-    
+
     // 3. Agregar cuerpo a la tabla
     tableElement.appendChild(tbody)
-    
+
     // 4. Restaurar indicadores de ordenamiento si existen
     if (currentSortState.field && currentSortState.dataType === dataType) {
       updateSortIndicators(currentSortState.field, currentSortState.ascending)
     }
-    
+
     // 5. Inicializar filtros con los nuevos datos
     initializeTableFilters(dataType, processedData)
-    
+
     // 6. Actualizar totales de la tabla
     updateTableTotals(processedData, processedData)
-    
+
   } catch (error) {
     console.error(`Error generando tabla ${dataType}:`, error)
     throw error
@@ -706,27 +706,28 @@ function generateTableFromProcessedData(tableElement, processedData, headers, da
  */
 function createGenericTableBody(data) {
   const tbody = document.createElement("tbody")
-  
+
   data.forEach((rowData) => {
     const tr = document.createElement("tr")
-    Object.entries(rowData).forEach(([key, value]) => {
+    Object.entries(rowData).forEach(([key, value], index) => {
       const td = document.createElement("td")
       // Asegurar que siempre haya contenido, aunque sea vacío
       if (value !== null && value !== undefined) {
-        // Aplicar formato de moneda si la columna contiene "importe"
-        if (key.toLowerCase().includes('importe')) {
+        // Aplicar formato de moneda al campo "Importe" (índice 6)
+        if (index === 6) {
           td.textContent = formatCurrency(value)
         } else {
           td.textContent = String(value)
         }
       } else {
-        td.textContent = ""
+        td.textContent = ''
       }
+      tr.appendChild(td)
       tr.appendChild(td)
     })
     tbody.appendChild(tr)
   })
-  
+
   return tbody
 }
 
@@ -740,7 +741,7 @@ async function processExcelAndGenerateTable(file, dataType, tableElement) {
   try {
     // 1. Procesar archivo Excel
     const rawData = await processExcelFile(file)
-    
+
     // 2. Procesar datos según el tipo
     let processedResult
     if (dataType === "apk") {
@@ -757,16 +758,16 @@ async function processExcelAndGenerateTable(file, dataType, tableElement) {
     } else {
       throw new Error(`Tipo de datos no soportado: ${dataType}`)
     }
-    
+
     // 3. Generar tabla
     const headers = getHeadersForDataType(dataType)
     generateTableFromProcessedData(tableElement, processedResult.processedData, headers, dataType)
-    
+
     // 4. Actualizar componente de sustitución masiva
     updateMassReplacementVisibility()
-    
+
     return processedResult.processedData
-    
+
   } catch (error) {
     console.error(`Error en processExcelAndGenerateTable para ${dataType}:`, error)
     throw error
@@ -782,13 +783,13 @@ function getProcessedDataFromStorage(dataType) {
   try {
     const processType = getSelectedProcessType();
     const processData = getProcessData(processType);
-    
+
     if (dataType === "apk" || dataType === "epk") {
       return processData.data || [];
     } else if (dataType === "gg") {
       return processData.gg || [];
     }
-    
+
     return [];
   } catch (error) {
     console.error(`Error obteniendo datos ${dataType} de localStorage:`, error);
@@ -879,28 +880,33 @@ function createApkTableBody(apkData) {
   apkData.forEach((rowData, index) => {
     // Se crea una nueva fila en la tabla
     const tr = document.createElement("tr")
-    
+
     // Agregar atributo data-record-id para identificar la fila
     tr.setAttribute('data-record-id', rowData.id)
     tr.setAttribute('data-record-index', index)
     tr.classList.add('table-row-clickable')
-    
+
     // Agregar event listener para abrir modal individual
     tr.addEventListener('click', () => {
       openIndividualRecordModal(rowData, 'apk')
     })
-    
+
     // Se agregan las celdas a la fila asegurando que cada campo tenga su td
-    Object.entries(rowData).forEach(([key, value]) => {
+    Object.entries(rowData).forEach(([key, value], index) => {
       const td = document.createElement("td")
-      
+
       // Formatear importes usando la función utilitaria
-      if (key === "importe") {
-        td.textContent = formatCurrency(value)
+      if (value !== null && value !== undefined) {
+        // Aplicar formato de moneda al campo "Importe" (índice 6)
+        if (index === 6) {
+          td.textContent = formatCurrency(value)
+        } else {
+          td.textContent = String(value)
+        }
       } else {
-        td.textContent = value !== null && value !== undefined ? String(value) : ""
+        td.textContent = ''
       }
-      
+
       tr.appendChild(td)
     })
     // Se agrega la fila al cuerpo de la tabla
@@ -918,14 +924,14 @@ function createApkTableBody(apkData) {
 function saveApkDataToLocalStorage(apkData, segmentNames) {
   const processType = getSelectedProcessType();
   const processData = getProcessData(processType);
-  
+
   // Actualizar los datos principales y segmentos
   processData.data = apkData;
   processData.segments = Array.from(segmentNames).map(segment => ({
     segment,
     count: 0,
   }));
-  
+
   // Guardar la estructura completa
   saveProcessData(processType, processData);
 }
@@ -937,13 +943,13 @@ function saveApkDataToLocalStorage(apkData, segmentNames) {
 function generateTableBodyForAPK(data) {
   // 1. Procesar los datos
   const { processedData, segmentNames } = processApkDataFromExcel(data)
-  
+
   // 2. Crear el cuerpo de la tabla
   const tbody = createApkTableBody(processedData)
-  
+
   // 3. Guardar en localStorage
   saveApkDataToLocalStorage(processedData, segmentNames)
-  
+
   // 4. Agregar el cuerpo a la tabla y actualizar UI
   resultTable.appendChild(tbody)
   updateSegmentEditorVisibility()
@@ -1029,28 +1035,34 @@ function createGgTableBody(ggData) {
   ggData.forEach((rowData, index) => {
     // Se crea una nueva fila en la tabla
     const tr = document.createElement("tr")
-    
+
     // Agregar atributo data-record-id para identificar la fila
     tr.setAttribute('data-record-id', rowData.id)
     tr.setAttribute('data-record-index', index)
     tr.classList.add('table-row-clickable')
-    
+
     // Agregar event listener para abrir modal individual
     tr.addEventListener('click', () => {
       openIndividualRecordModal(rowData, 'gg')
     })
-    
+
     // Se agregan las celdas a la fila asegurando que cada campo tenga su td
-    Object.entries(rowData).forEach(([key, value]) => {
+    Object.entries(rowData).forEach(([key, value], index) => {
       const td = document.createElement("td")
-      
+
       // Formatear importes usando la función utilitaria
-      if (key === "importe") {
-        td.textContent = formatCurrency(value)
+      if (value !== null && value !== undefined) {
+        // Aplicar formato de moneda al campo "Importe" (índice 6)
+        if (index === 6) {
+          td.textContent = formatCurrency(value)
+        } else {
+          td.textContent = String(value)
+        }
       } else {
-        td.textContent = value !== null && value !== undefined ? String(value) : ""
+        td.textContent = ''
       }
-      
+      tr.appendChild(td)
+
       tr.appendChild(td)
     })
     // Se agrega la fila al cuerpo de la tabla
@@ -1067,10 +1079,10 @@ function createGgTableBody(ggData) {
 function saveGgDataToLocalStorage(ggData) {
   const processType = getSelectedProcessType();
   const processData = getProcessData(processType);
-  
+
   // Actualizar los datos de gastos generales
   processData.gg = ggData;
-  
+
   // Guardar la estructura completa
   saveProcessData(processType, processData);
 }
@@ -1082,13 +1094,13 @@ function saveGgDataToLocalStorage(ggData) {
 function generateTableBodyForGG(data) {
   // 1. Procesar los datos
   const { processedData, segmentNames } = processGgDataFromExcel(data)
-  
+
   // 2. Crear el cuerpo de la tabla
   const tbody = createGgTableBody(processedData)
-  
+
   // 3. Guardar en localStorage
   saveGgDataToLocalStorage(processedData)
-  
+
   // 4. Agregar el cuerpo a la tabla
   resultTable.appendChild(tbody)
 }
@@ -1395,9 +1407,9 @@ function saveConceptsToStorage(concepts) {
 function validateConceptInput() {
   const value = conceptInput.value.trim()
   const isValid = value.length > 0 && value.length <= 100
-  
+
   addConceptBtn.disabled = !isValid
-  
+
   // Cambiar estilo del input según validación
   if (value.length > 0 && !isValid) {
     conceptInput.style.borderColor = "#dc3545"
@@ -1411,43 +1423,43 @@ function validateConceptInput() {
  */
 function addConcept() {
   const conceptText = conceptInput.value.trim()
-  
+
   if (!conceptText) {
     conceptInput.focus()
     return
   }
-  
+
   if (conceptText.length > 100) {
     showModal("El concepto no puede tener más de 100 caracteres")
     return
   }
-  
+
   const concepts = getConceptsFromStorage()
-  
+
   // Verificar si el concepto ya existe (sin distinguir mayúsculas/minúsculas)
   const conceptExists = concepts.some(
     concept => concept.toLowerCase() === conceptText.toLowerCase()
   )
-  
+
   if (conceptExists) {
     showModal("Este concepto ya existe en la lista")
     conceptInput.focus()
     return
   }
-  
+
   // Agregar el nuevo concepto
   concepts.push(conceptText)
   saveConceptsToStorage(concepts)
-  
+
   // Actualizar la UI
   loadConceptsFromStorage()
   updateConceptsCounter()
-  
+
   // Limpiar el input
   conceptInput.value = ""
   validateConceptInput()
   conceptInput.focus()
-  
+
   showToast()
 }
 
@@ -1457,7 +1469,7 @@ function addConcept() {
  */
 function deleteConcept(index) {
   const concepts = getConceptsFromStorage()
-  
+
   if (index >= 0 && index < concepts.length) {
     concepts.splice(index, 1)
     saveConceptsToStorage(concepts)
@@ -1474,29 +1486,29 @@ function deleteConcept(index) {
  */
 function editConcept(index, newText) {
   const conceptText = newText.trim()
-  
+
   if (!conceptText) {
     showModal("El concepto no puede estar vacío")
     return false
   }
-  
+
   if (conceptText.length > 100) {
     showModal("El concepto no puede tener más de 100 caracteres")
     return false
   }
-  
+
   const concepts = getConceptsFromStorage()
-  
+
   // Verificar si el concepto ya existe (excluyendo el actual)
   const conceptExists = concepts.some(
     (concept, i) => i !== index && concept.toLowerCase() === conceptText.toLowerCase()
   )
-  
+
   if (conceptExists) {
     showModal("Este concepto ya existe en la lista")
     return false
   }
-  
+
   if (index >= 0 && index < concepts.length) {
     concepts[index] = conceptText
     saveConceptsToStorage(concepts)
@@ -1504,7 +1516,7 @@ function editConcept(index, newText) {
     showToast()
     return true
   }
-  
+
   return false
 }
 
@@ -1523,7 +1535,7 @@ function clearAllConcepts() {
  */
 function loadConceptsFromStorage() {
   const concepts = getConceptsFromStorage()
-  
+
   if (concepts.length === 0) {
     showEmptyConceptsMessage()
   } else {
@@ -1561,7 +1573,7 @@ function renderConceptsList(concepts) {
       </div>
     </div>
   `).join("")
-  
+
   conceptsList.innerHTML = conceptsHTML
 }
 
@@ -1572,11 +1584,11 @@ function renderConceptsList(concepts) {
 function startEditConcept(index) {
   const concepts = getConceptsFromStorage()
   const conceptItem = document.querySelector(`[data-index="${index}"]`)
-  
+
   if (!conceptItem || index >= concepts.length) return
-  
+
   const currentText = concepts[index]
-  
+
   conceptItem.innerHTML = `
     <input type="text" class="edit-concept-input" value="${escapeHtml(currentText)}" maxlength="100">
     <div class="concept-actions">
@@ -1588,11 +1600,11 @@ function startEditConcept(index) {
       </button>
     </div>
   `
-  
+
   const input = conceptItem.querySelector(".edit-concept-input")
   input.focus()
   input.select()
-  
+
   // Guardar en Enter
   input.addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
@@ -1610,7 +1622,7 @@ function startEditConcept(index) {
 function saveEditConcept(index) {
   const conceptItem = document.querySelector(`[data-index="${index}"]`)
   const input = conceptItem.querySelector(".edit-concept-input")
-  
+
   if (input) {
     const success = editConcept(index, input.value)
     if (!success) {
@@ -1705,30 +1717,30 @@ function conceptExists(conceptText) {
 function openVerifyCarousel() {
   // Determinar qué tipo de datos usar basándose en el radio button seleccionado
   const selectedOption = document.querySelector('input[name="step"]:checked').value
-  
+
   let currentDataArray = []
   let dataType = ""
-  
+
   if (selectedOption === "apk") {
     // Usuario seleccionó APK
     apkDataArray = getApkDataFromStorage()
-    
+
     if (apkDataArray.length === 0) {
       showModal("No hay datos APK para verificar. Procesa primero un archivo APK.")
       return
     }
-    
+
     currentDataArray = apkDataArray
     dataType = "APK"
   } else if (selectedOption === "gg") {
     // Usuario seleccionó GG
     ggDataArray = getGgDataFromStorage()
-    
+
     if (ggDataArray.length === 0) {
       showModal("No hay datos GG para verificar. Procesa primero un archivo GG.")
       return
     }
-    
+
     // Para GG usamos ggDataArray como referencia principal
     apkDataArray = ggDataArray
     currentDataArray = ggDataArray
@@ -1737,16 +1749,16 @@ function openVerifyCarousel() {
     showModal("Selecciona el tipo de datos a verificar (APK o GG).")
     return
   }
-  
+
   // Actualizar el título del carrusel según el tipo de datos
   updateCarouselTitle(dataType)
-  
+
   // Inicializar el carrusel
   currentRecordIndex = 0
   populateConceptSelector()
   displayCurrentRecord()
   updateNavigationButtons()
-  
+
   // Mostrar el carrusel
   verifyCarousel.classList.remove("hidden")
 }
@@ -1761,12 +1773,14 @@ function closeVerifyCarousel() {
 }
 
 /**
- * Obtiene los datos APK del localStorage
+ * Obtiene los datos APK del localStorage usando la nueva arquitectura
  * @returns {Array<Object>} Array de objetos APK
  */
 function getApkDataFromStorage() {
   try {
-    return JSON.parse(localStorage.getItem("apkData")) || []
+    const processType = getSelectedProcessType();
+    const processData = getProcessData(processType);
+    return processData.data || [];
   } catch (error) {
     console.error("Error al leer datos APK del localStorage:", error)
     return []
@@ -1774,12 +1788,15 @@ function getApkDataFromStorage() {
 }
 
 /**
- * Guarda los datos APK en el localStorage
+ * Guarda los datos APK en el localStorage usando la nueva arquitectura
  * @param {Array<Object>} data Array de objetos APK a guardar
  */
 function saveApkDataToStorage(data) {
   try {
-    localStorage.setItem("apkData", JSON.stringify(data))
+    const processType = getSelectedProcessType();
+    const processData = getProcessData(processType);
+    processData.data = data;
+    saveProcessData(processType, processData);
   } catch (error) {
     console.error("Error al guardar datos APK en localStorage:", error)
     showModal("Error al guardar los datos")
@@ -1787,12 +1804,14 @@ function saveApkDataToStorage(data) {
 }
 
 /**
- * Obtiene los datos GG del localStorage
+ * Obtiene los datos GG del localStorage usando la nueva arquitectura
  * @returns {Array<Object>} Array de objetos GG
  */
 function getGgDataFromStorage() {
   try {
-    return JSON.parse(localStorage.getItem("ggData")) || []
+    const processType = getSelectedProcessType();
+    const processData = getProcessData(processType);
+    return processData.gg || [];
   } catch (error) {
     console.error("Error al leer datos GG del localStorage:", error)
     return []
@@ -1800,12 +1819,15 @@ function getGgDataFromStorage() {
 }
 
 /**
- * Guarda los datos GG en el localStorage
+ * Guarda los datos GG en el localStorage usando la nueva arquitectura
  * @param {Array<Object>} data Array de objetos GG a guardar
  */
 function saveGgDataToStorage(data) {
   try {
-    localStorage.setItem("ggData", JSON.stringify(data))
+    const processType = getSelectedProcessType();
+    const processData = getProcessData(processType);
+    processData.gg = data;
+    saveProcessData(processType, processData);
   } catch (error) {
     console.error("Error al guardar datos GG en localStorage:", error)
     showModal("Error al guardar los datos")
@@ -1828,15 +1850,15 @@ function updateCarouselTitle(dataType) {
  */
 function populateConceptSelector() {
   const concepts = getConceptsFromStorage()
-  
+
   // Limpiar opciones existentes excepto la primera
   conceptSelect.innerHTML = '<option value="">Seleccionar concepto...</option>'
-  
+
   // Ordenar conceptos alfabéticamente (insensible a mayúsculas/minúsculas)
   const sortedConcepts = concepts.sort((a, b) => {
     return a.toLowerCase().localeCompare(b.toLowerCase())
   })
-  
+
   // Agregar conceptos ordenados como opciones
   sortedConcepts.forEach(concept => {
     const option = document.createElement("option")
@@ -1844,11 +1866,11 @@ function populateConceptSelector() {
     option.textContent = concept
     conceptSelect.appendChild(option)
   })
-  
+
   // Actualizar totales basándose en el radio button seleccionado
   const selectedOption = document.querySelector('input[name="step"]:checked').value
   let totalRecords = 0
-  
+
   if (selectedOption === "apk") {
     const apkData = getApkDataFromStorage()
     totalRecords = apkData.length
@@ -1856,7 +1878,7 @@ function populateConceptSelector() {
     const ggData = getGgDataFromStorage()
     totalRecords = ggData.length
   }
-  
+
   totalRecordsSpan.textContent = totalRecords
 }
 
@@ -1864,22 +1886,25 @@ function populateConceptSelector() {
  * Muestra el registro actual en el carrusel
  */
 function displayCurrentRecord() {
-  if (currentRecordIndex < 0 || currentRecordIndex >= apkDataArray.length) {
+  if (!apkDataArray || currentRecordIndex < 0 || currentRecordIndex >= apkDataArray.length) {
     return
   }
-  
+
   const record = apkDataArray[currentRecordIndex]
-  
+  if (!record) {
+    return
+  }
+
   // Determinar si estamos trabajando con datos GG basándose en el radio button seleccionado
   const selectedOption = document.querySelector('input[name="step"]:checked').value
   const isGGData = selectedOption === "gg"
-  
+
   // Actualizar la etiqueta de "Vuelta"/"Segmento" según el tipo de datos
   const vueltaLabel = document.querySelector('.data-row:last-child .data-label')
   if (vueltaLabel) {
     vueltaLabel.textContent = isGGData ? "Segmento:" : "Vuelta:"
   }
-  
+
   // Actualizar información del registro
   currentIndexSpan.textContent = currentRecordIndex + 1
   dataFecha.textContent = record.fecha || ""
@@ -1887,7 +1912,7 @@ function displayCurrentRecord() {
   dataFactura.textContent = record.factura || ""
   dataConcepto.textContent = record.concepto || ""
   dataVuelta.textContent = record.vuelta || ""
-  
+
   // Resetear selector de conceptos
   conceptSelect.value = ""
   validateChangeButton()
@@ -1898,8 +1923,12 @@ function displayCurrentRecord() {
  * @param {number} direction Dirección de navegación (-1 para anterior, 1 para siguiente)
  */
 function navigateRecord(direction) {
-  const newIndex = currentRecordIndex + direction
+  if (!apkDataArray || apkDataArray.length === 0) {
+    return
+  }
   
+  const newIndex = currentRecordIndex + direction
+
   if (newIndex >= 0 && newIndex < apkDataArray.length) {
     currentRecordIndex = newIndex
     displayCurrentRecord()
@@ -1911,6 +1940,12 @@ function navigateRecord(direction) {
  * Actualiza el estado de los botones de navegación
  */
 function updateNavigationButtons() {
+  if (!apkDataArray || apkDataArray.length === 0) {
+    prevRecordBtn.disabled = true
+    nextRecordBtn.disabled = true
+    return
+  }
+  
   prevRecordBtn.disabled = currentRecordIndex <= 0
   nextRecordBtn.disabled = currentRecordIndex >= apkDataArray.length - 1
 }
@@ -1920,8 +1955,15 @@ function updateNavigationButtons() {
  */
 function validateChangeButton() {
   const selectedConcept = conceptSelect.value.trim()
-  const currentConcept = apkDataArray[currentRecordIndex]?.concepto || ""
   
+  // Validar que el array y el índice existan
+  if (!apkDataArray || currentRecordIndex < 0 || currentRecordIndex >= apkDataArray.length) {
+    changeConceptBtn.disabled = true
+    return
+  }
+  
+  const currentConcept = apkDataArray[currentRecordIndex]?.concepto || ""
+
   // Habilitar solo si se seleccionó un concepto diferente al actual
   changeConceptBtn.disabled = !selectedConcept || selectedConcept === currentConcept
 }
@@ -1931,25 +1973,37 @@ function validateChangeButton() {
  */
 function changeRecordConcept() {
   const selectedConcept = conceptSelect.value.trim()
-  
+
   if (!selectedConcept) {
     showModal("Selecciona un concepto para continuar")
     return
   }
-  
-  const currentConcept = apkDataArray[currentRecordIndex].concepto
-  
+
+  // Validar que el array y el índice existan
+  if (!apkDataArray || currentRecordIndex < 0 || currentRecordIndex >= apkDataArray.length) {
+    showModal("Error: No se encontró el registro a actualizar")
+    return
+  }
+
+  const currentRecord = apkDataArray[currentRecordIndex]
+  if (!currentRecord) {
+    showModal("Error: Registro no válido")
+    return
+  }
+
+  const currentConcept = currentRecord.concepto || ""
+
   if (selectedConcept === currentConcept) {
     showModal("El concepto seleccionado es el mismo que el actual")
     return
   }
-  
+
   // Actualizar el concepto en el array directamente
   apkDataArray[currentRecordIndex].concepto = selectedConcept
-  
+
   // Determinar qué tipo de datos estamos manejando basándose en el radio button seleccionado
   const selectedOption = document.querySelector('input[name="step"]:checked').value
-  
+
   if (selectedOption === "apk") {
     // Estamos trabajando con datos APK
     saveApkDataToStorage(apkDataArray)
@@ -1957,13 +2011,13 @@ function changeRecordConcept() {
     // Estamos trabajando con datos GG
     saveGgDataToStorage(apkDataArray) // apkDataArray contiene los datos GG en este contexto
   }
-  
+
   // Actualizar la tabla si está visible
   updateTableAfterConceptChange()
-  
+
   // Mostrar confirmación
   showToast()
-  
+
   // Avanzar al siguiente registro o cerrar si es el último
   if (currentRecordIndex < apkDataArray.length - 1) {
     navigateRecord(1)
@@ -1982,15 +2036,15 @@ function updateTableAfterConceptChange() {
     // Regenerar el cuerpo de la tabla con los nuevos datos
     const tbody = resultTable.querySelector("tbody")
     tbody.innerHTML = ""
-    
+
     // Determinar qué datos usar para actualizar basándose en el radio button seleccionado
     const selectedOption = document.querySelector('input[name="step"]:checked').value
     const isGGData = selectedOption === "gg"
-    
+
     // Recrear las filas con los datos actualizados
     apkDataArray.forEach(record => {
       const tr = document.createElement("tr")
-      
+
       // Crear celdas en el orden correcto
       // Para GG, el header "Vuelta" se llama "Segmento" pero los datos son iguales
       const values = [
@@ -2005,14 +2059,18 @@ function updateTableAfterConceptChange() {
         record.mes,
         record.año
       ]
-      
-      values.forEach(value => {
+
+      values.forEach((value, index) => {
         const td = document.createElement("td")
         // Asegurar que siempre haya contenido, aunque sea vacío
-        td.textContent = value !== null && value !== undefined ? String(value) : ""
+        if (index === 5) {
+          td.textContent = formatCurrency(value)
+        } else {
+          td.textContent = value !== null && value !== undefined ? String(value) : ""
+        }
         tr.appendChild(td)
       })
-      
+
       tbody.appendChild(tr)
     })
   }
@@ -2025,10 +2083,10 @@ function updateTableAfterConceptChange() {
 function showToast(message = "¡Concepto actualizado correctamente!") {
   const toastMessage = document.querySelector(".toast-message")
   const originalMessage = toastMessage.textContent
-  
+
   toastMessage.textContent = message
   toast.classList.remove("hidden")
-  
+
   setTimeout(() => {
     hideToast()
     toastMessage.textContent = originalMessage
@@ -2045,7 +2103,7 @@ function showToast(message = "¡Concepto actualizado correctamente!") {
 function updateMassReplacementVisibility() {
   const selectedOption = document.querySelector('input[name="step"]:checked')?.value
   const data = getProcessedDataFromStorage(selectedOption)
-  
+
   if (data && data.length > 0) {
     massReplacementManager.classList.remove("hidden")
     updateMassReplacementData(selectedOption, data)
@@ -2081,16 +2139,16 @@ function updateMassReplacementData(dataType, data) {
   // Actualizar información general
   currentDataType.textContent = dataType.toUpperCase()
   totalRecordsCount.textContent = data.length
-  
+
   // Obtener conceptos únicos y sus conteos
   const conceptCounts = getConceptCounts(data)
-  
+
   // Poblar lista de checkboxes de conceptos
   populateConceptCheckboxes(conceptCounts)
-  
+
   // Poblar selector de concepto destino
   populateTargetConceptSelector()
-  
+
   // Limpiar selección anterior
   clearAllConceptSelection()
 }
@@ -2102,14 +2160,14 @@ function updateMassReplacementData(dataType, data) {
  */
 function getConceptCounts(data) {
   const conceptCounts = new Map()
-  
+
   data.forEach(record => {
     const concept = record.concepto || ""
     if (concept.trim()) {
       conceptCounts.set(concept, (conceptCounts.get(concept) || 0) + 1)
     }
   })
-  
+
   return conceptCounts
 }
 
@@ -2127,11 +2185,11 @@ function populateConceptCheckboxes(conceptCounts) {
     `
     return
   }
-  
+
   // Convertir a array y ordenar alfabéticamente
   const sortedConcepts = Array.from(conceptCounts.entries())
     .sort((a, b) => a[0].localeCompare(b[0]))
-  
+
   const checkboxHTML = sortedConcepts.map(([concept, count], index) => `
     <div class="concept-checkbox-item" data-concept="${escapeHtml(concept)}">
       <input 
@@ -2146,9 +2204,9 @@ function populateConceptCheckboxes(conceptCounts) {
       <span class="concept-count">${count}</span>
     </div>
   `).join("")
-  
+
   conceptsCheckboxList.innerHTML = checkboxHTML
-  
+
   // Agregar event listeners a los checkboxes
   conceptsCheckboxList.querySelectorAll('.concept-checkbox').forEach(checkbox => {
     checkbox.addEventListener('change', () => {
@@ -2176,13 +2234,13 @@ function updateCheckboxItemStyle(checkbox) {
  */
 function populateTargetConceptSelector() {
   const savedConcepts = getConceptsFromStorage()
-  
+
   // Limpiar opciones existentes excepto la primera
   targetConceptSelect.innerHTML = '<option value="">Seleccionar concepto destino...</option>'
-  
+
   // Ordenar conceptos alfabéticamente
   const sortedConcepts = savedConcepts.sort((a, b) => a.localeCompare(b))
-  
+
   sortedConcepts.forEach(concept => {
     const option = document.createElement('option')
     option.value = concept
@@ -2230,13 +2288,13 @@ function getSelectedConcepts() {
 function updateReplacementSummary() {
   const selectedConcepts = getSelectedConcepts()
   const targetConcept = targetConceptSelect.value
-  
+
   if (selectedConcepts.length === 0) {
     replacementSummary.innerHTML = '<p class="summary-text">Selecciona conceptos para reemplazar</p>'
     executeReplacementBtn.disabled = true
     return
   }
-  
+
   if (!targetConcept) {
     replacementSummary.innerHTML = `
       <p class="summary-text">
@@ -2247,7 +2305,7 @@ function updateReplacementSummary() {
     executeReplacementBtn.disabled = true
     return
   }
-  
+
   // Validar que el concepto destino no esté en los conceptos origen
   if (selectedConcepts.includes(targetConcept)) {
     replacementSummary.innerHTML = `
@@ -2259,12 +2317,12 @@ function updateReplacementSummary() {
     executeReplacementBtn.disabled = true
     return
   }
-  
+
   // Calcular total de registros afectados
   const selectedOption = document.querySelector('input[name="step"]:checked')?.value
   const data = getProcessedDataFromStorage(selectedOption)
   const affectedRecords = data.filter(record => selectedConcepts.includes(record.concepto)).length
-  
+
   replacementSummary.innerHTML = `
     <div class="summary-active">
       <p><strong>Resumen de sustitución:</strong></p>
@@ -2273,7 +2331,7 @@ function updateReplacementSummary() {
       <p>• Concepto destino: <em>${targetConcept}</em></p>
     </div>
   `
-  
+
   executeReplacementBtn.disabled = false
 }
 
@@ -2283,22 +2341,22 @@ function updateReplacementSummary() {
 function previewMassReplacement() {
   const selectedConcepts = getSelectedConcepts()
   const targetConcept = targetConceptSelect.value
-  
+
   if (selectedConcepts.length === 0 || !targetConcept) {
     showModal("Selecciona conceptos origen y concepto destino para ver la vista previa")
     return
   }
-  
+
   const selectedOption = document.querySelector('input[name="step"]:checked')?.value
   const data = getProcessedDataFromStorage(selectedOption)
   const affectedRecords = data.filter(record => selectedConcepts.includes(record.concepto))
-  
+
   let previewHTML = `
     <div style="text-align: left; max-height: 300px; overflow-y: auto;">
       <h4>Vista Previa de Cambios (${affectedRecords.length} registros)</h4>
       <hr style="margin: 10px 0;">
   `
-  
+
   const previewLimit = 10 // Mostrar máximo 10 registros en preview
   affectedRecords.slice(0, previewLimit).forEach((record, index) => {
     previewHTML += `
@@ -2311,13 +2369,13 @@ function previewMassReplacement() {
       </p>
     `
   })
-  
+
   if (affectedRecords.length > previewLimit) {
     previewHTML += `<p style="text-align: center; color: #666; font-style: italic;">... y ${affectedRecords.length - previewLimit} registros más</p>`
   }
-  
+
   previewHTML += `</div>`
-  
+
   showModal(previewHTML)
 }
 
@@ -2327,18 +2385,18 @@ function previewMassReplacement() {
 function executeMassReplacement() {
   const selectedConcepts = getSelectedConcepts()
   const targetConcept = targetConceptSelect.value
-  
+
   if (selectedConcepts.length === 0 || !targetConcept) {
     showModal("Selecciona conceptos origen y concepto destino para ejecutar la sustitución")
     return
   }
-  
+
   // Ejecutar directamente sin confirmación - asumimos que el usuario siempre confirma
   try {
     // Obtener datos actuales
     const selectedOption = document.querySelector('input[name="step"]:checked')?.value
     const data = getProcessedDataFromStorage(selectedOption)
-    
+
     // Realizar sustitución
     let replacedCount = 0
     data.forEach(record => {
@@ -2347,26 +2405,26 @@ function executeMassReplacement() {
         replacedCount++
       }
     })
-    
+
     // Guardar datos actualizados en localStorage
     if (selectedOption === "apk") {
       localStorage.setItem('apkData', JSON.stringify(data))
     } else if (selectedOption === "gg") {
       localStorage.setItem('ggData', JSON.stringify(data))
     }
-    
+
     // Actualizar tabla si está visible
     if (!tableSection.classList.contains("hidden")) {
       const headers = getHeadersForDataType(selectedOption)
       generateTableFromProcessedData(resultTable, data, headers, selectedOption)
     }
-    
+
     // Actualizar componente de sustitución masiva
     updateMassReplacementData(selectedOption, data)
-    
+
     // Mostrar confirmación
     showToast(`¡Sustitución completada! ${replacedCount} registros actualizados.`)
-    
+
   } catch (error) {
     console.error("Error ejecutando sustitución masiva:", error)
     showModal("Error al ejecutar la sustitución. Por favor, intenta de nuevo.")
@@ -2379,20 +2437,20 @@ function executeMassReplacement() {
  */
 function debugMassReplacementComponent() {
   console.log("=== DEBUG: Componente de Sustitución Masiva ===")
-  
+
   const selectedOption = document.querySelector('input[name="step"]:checked')?.value
   const data = getProcessedDataFromStorage(selectedOption)
-  
+
   console.log("Tipo de datos seleccionado:", selectedOption)
   console.log("Datos cargados:", data ? data.length : 0, "registros")
   console.log("Componente visible:", !massReplacementManager.classList.contains("hidden"))
-  
+
   if (data && data.length > 0) {
     const conceptCounts = getConceptCounts(data)
     console.log("Conceptos únicos encontrados:", conceptCounts.size)
     console.log("Conceptos guardados disponibles:", getConceptsFromStorage().length)
   }
-  
+
   console.log("============================================")
 }
 
@@ -2407,24 +2465,24 @@ function debugMassReplacementComponent() {
  */
 function parseCustomDate(dateString) {
   if (!dateString || typeof dateString !== 'string') return null
-  
+
   const monthsMap = {
     'Ene': 0, 'Feb': 1, 'Mar': 2, 'Abr': 3, 'May': 4, 'Jun': 5,
     'Jul': 6, 'Ago': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dic': 11
   }
-  
+
   // Parsear formato DD/Mmm/YYYY
   const parts = dateString.trim().split('/')
   if (parts.length !== 3) return null
-  
+
   const day = parseInt(parts[0], 10)
   const monthStr = parts[1]
   const year = parseInt(parts[2], 10)
-  
+
   if (isNaN(day) || isNaN(year) || !monthsMap.hasOwnProperty(monthStr)) {
     return null
   }
-  
+
   const month = monthsMap[monthStr]
   return new Date(year, month, day)
 }
@@ -2439,7 +2497,7 @@ function parseCustomDate(dateString) {
  */
 function compareValues(a, b, type, ascending = true) {
   let result = 0
-  
+
   switch (type) {
     case 'date':
       const dateA = parseCustomDate(a)
@@ -2449,13 +2507,13 @@ function compareValues(a, b, type, ascending = true) {
       else if (!dateB) result = -1
       else result = dateA.getTime() - dateB.getTime()
       break
-      
+
     case 'number':
       const numA = parseFloat(a) || 0
       const numB = parseFloat(b) || 0
       result = numA - numB
       break
-      
+
     case 'text':
     default:
       const strA = String(a || '').toLowerCase()
@@ -2463,7 +2521,7 @@ function compareValues(a, b, type, ascending = true) {
       result = strA.localeCompare(strB)
       break
   }
-  
+
   return ascending ? result : -result
 }
 
@@ -2486,40 +2544,40 @@ function sortTableByField(field, ascending, dataType) {
   // Obtener datos actuales
   const data = getCurrentData(dataType)
   if (!data || data.length === 0) return
-  
+
   // Determinar tipo de comparación según el campo
   let compareType = 'text'
   if (field === 'Fecha') compareType = 'date'
   else if (field === 'Importe') compareType = 'number'
-  
+
   // Mapear nombre del campo a propiedad del objeto
   const fieldMap = {
     'Fecha': 'fecha',
-    'Proveedor': 'proveedor', 
+    'Proveedor': 'proveedor',
     'Importe': 'importe',
     'Concepto': 'concepto'
   }
-  
+
   const fieldProperty = fieldMap[field]
   if (!fieldProperty) return
-  
+
   // Ordenar datos
   const sortedData = [...data].sort((a, b) => {
     const primaryResult = compareValues(a[fieldProperty], b[fieldProperty], compareType, ascending)
     // Ordenamiento secundario por ID para estabilidad
     return primaryResult !== 0 ? primaryResult : compareValues(a.id, b.id, 'number', true)
   })
-  
+
   // Actualizar estado de ordenamiento
   currentSortState = { field, ascending, dataType }
-  
+
   // Guardar datos ordenados
   saveCurrentData(sortedData, dataType)
-  
+
   // Regenerar tabla
   const headers = getHeadersForDataType(dataType)
   generateTableFromProcessedData(resultTable, sortedData, headers, dataType)
-  
+
   // Actualizar indicadores visuales de ordenamiento
   updateSortIndicators(field, ascending)
 }
@@ -2535,7 +2593,7 @@ function updateSortIndicators(activeField, ascending) {
   headers.forEach(header => {
     header.classList.remove('sort-active', 'sort-asc-active', 'sort-desc-active')
   })
-  
+
   // Activar indicador del campo actual
   const activeHeader = resultTable.querySelector(`[data-field="${activeField}"]`)
   if (activeHeader) {
@@ -2556,15 +2614,15 @@ function handleHeaderClick(event) {
   const header = event.currentTarget
   const fieldName = header.dataset.field
   const dataType = header.dataset.type || getSelectedDataType()
-  
+
   if (!fieldName) return
-  
+
   // Determinar dirección de ordenamiento
   let ascending = true
   if (currentSortState.field === fieldName && currentSortState.dataType === dataType) {
     ascending = !currentSortState.ascending
   }
-  
+
   // Ordenar tabla
   sortTableByField(fieldName, ascending, dataType)
 }
@@ -2577,13 +2635,13 @@ function handleHeaderClick(event) {
 function getCurrentData(dataType) {
   const processType = getSelectedProcessType();
   const processData = getProcessData(processType);
-  
+
   if (dataType === 'apk' || dataType === 'epk') {
     return processData.data || [];
   } else if (dataType === 'gg') {
     return processData.gg || [];
   }
-  
+
   return [];
 }
 
@@ -2595,13 +2653,13 @@ function getCurrentData(dataType) {
 function saveCurrentData(sortedData, dataType) {
   const processType = getSelectedProcessType();
   const processData = getProcessData(processType);
-  
+
   if (dataType === 'apk' || dataType === 'epk') {
     processData.data = sortedData;
   } else if (dataType === 'gg') {
     processData.gg = sortedData;
   }
-  
+
   saveProcessData(processType, processData);
 }
 
@@ -2632,37 +2690,37 @@ let currentIndividualDataType = null
 function openIndividualRecordModal(record, dataType) {
   currentIndividualRecord = { ...record } // Crear copia para evitar mutaciones
   currentIndividualDataType = dataType
-  
+
   // Actualizar el título del modal según el tipo de datos
   const carouselTitle = document.querySelector('.carousel-title')
   if (carouselTitle) {
     carouselTitle.textContent = `Editar Registro ${dataType.toUpperCase()}`
   }
-  
+
   // Ocultar botones de navegación (anterior/siguiente)
   const navigationButtons = document.querySelectorAll('#prevRecord, #nextRecord, #skipRecord')
   navigationButtons.forEach(btn => {
     btn.style.display = 'none'
   })
-  
+
   // Actualizar el contador para mostrar "1 de 1"
   const currentIndexSpan = document.querySelector('#currentIndex')
   const totalRecordsSpan = document.querySelector('#totalRecords')
   if (currentIndexSpan) currentIndexSpan.textContent = '1'
   if (totalRecordsSpan) totalRecordsSpan.textContent = '1'
-  
+
   // Poblar el selector de conceptos
   populateIndividualConceptSelector()
-  
+
   // Mostrar los datos del registro
   displayIndividualRecord(record, dataType)
-  
+
   // Actualizar el texto del botón de cambio
   const changeConceptBtn = document.querySelector('#changeConceptBtn')
   if (changeConceptBtn) {
     changeConceptBtn.onclick = () => changeIndividualRecordConcept()
   }
-  
+
   // Mostrar el modal (reutilizando verifyCarousel)
   verifyCarousel.classList.remove('hidden')
 }
@@ -2676,11 +2734,11 @@ function closeIndividualRecordModal() {
   navigationButtons.forEach(btn => {
     btn.style.display = ''
   })
-  
+
   // Limpiar variables
   currentIndividualRecord = null
   currentIndividualDataType = null
-  
+
   // Cerrar modal
   verifyCarousel.classList.add('hidden')
 }
@@ -2691,15 +2749,15 @@ function closeIndividualRecordModal() {
 function populateIndividualConceptSelector() {
   const concepts = getConceptsFromStorage()
   const conceptSelect = document.querySelector('#conceptSelect')
-  
+
   // Limpiar opciones existentes excepto la primera
   conceptSelect.innerHTML = '<option value="">Seleccionar concepto...</option>'
-  
+
   // Ordenar conceptos alfabéticamente
   const sortedConcepts = concepts.sort((a, b) => {
     return a.toLowerCase().localeCompare(b.toLowerCase())
   })
-  
+
   // Agregar conceptos ordenados como opciones
   sortedConcepts.forEach(concept => {
     const option = document.createElement('option')
@@ -2721,23 +2779,23 @@ function displayIndividualRecord(record, dataType) {
   const dataFactura = document.querySelector('#dataFactura')
   const dataConcepto = document.querySelector('#dataConcepto')
   const dataVuelta = document.querySelector('#dataVuelta')
-  
+
   if (dataFecha) dataFecha.textContent = record.fecha || ''
   if (dataProveedor) dataProveedor.textContent = record.proveedor || ''
   if (dataFactura) dataFactura.textContent = record.factura || ''
   if (dataConcepto) dataConcepto.textContent = record.concepto || ''
   if (dataVuelta) dataVuelta.textContent = record.vuelta || ''
-  
+
   // Actualizar la etiqueta de "Vuelta"/"Segmento" según el tipo
   const vueltaLabel = document.querySelector('.data-row:last-child .data-label')
   if (vueltaLabel) {
     vueltaLabel.textContent = dataType === 'gg' ? 'Segmento:' : 'Vuelta:'
   }
-  
+
   // Resetear selector de conceptos
   const conceptSelect = document.querySelector('#conceptSelect')
   if (conceptSelect) conceptSelect.value = ''
-  
+
   // Validar botón de cambio
   validateIndividualChangeButton()
 }
@@ -2748,12 +2806,12 @@ function displayIndividualRecord(record, dataType) {
 function validateIndividualChangeButton() {
   const conceptSelect = document.querySelector('#conceptSelect')
   const changeConceptBtn = document.querySelector('#changeConceptBtn')
-  
+
   if (!conceptSelect || !changeConceptBtn || !currentIndividualRecord) return
-  
+
   const selectedConcept = conceptSelect.value.trim()
   const currentConcept = currentIndividualRecord.concepto || ''
-  
+
   // Habilitar solo si se seleccionó un concepto diferente al actual
   changeConceptBtn.disabled = !selectedConcept || selectedConcept === currentConcept
 }
@@ -2763,36 +2821,36 @@ function validateIndividualChangeButton() {
  */
 function changeIndividualRecordConcept() {
   if (!currentIndividualRecord || !currentIndividualDataType) return
-  
+
   const conceptSelect = document.querySelector('#conceptSelect')
   const selectedConcept = conceptSelect.value.trim()
-  
+
   if (!selectedConcept) {
     showModal('Selecciona un concepto para continuar')
     return
   }
-  
+
   const currentConcept = currentIndividualRecord.concepto
-  
+
   if (selectedConcept === currentConcept) {
     showModal('El concepto seleccionado es el mismo que el actual')
     return
   }
-  
+
   // Actualizar el registro en los datos almacenados
   const data = getCurrentData(currentIndividualDataType)
   const recordIndex = data.findIndex(record => record.id === currentIndividualRecord.id)
-  
+
   if (recordIndex !== -1) {
     // Actualizar el registro
     data[recordIndex].concepto = selectedConcept
-    
+
     // Guardar en localStorage
     saveCurrentData(data, currentIndividualDataType)
-    
+
     // Actualizar la tabla visible
     updateTableAfterIndividualChange()
-    
+
     // Actualizar filtros si están activos
     if (originalTableData.length > 0) {
       // Actualizar datos originales de filtros
@@ -2803,10 +2861,10 @@ function changeIndividualRecordConcept() {
       // Reaplicar filtros
       applyTableFilters()
     }
-    
+
     // Mostrar confirmación
     showToast('¡Concepto actualizado correctamente!')
-    
+
     // Cerrar modal
     closeIndividualRecordModal()
   } else {
@@ -2840,7 +2898,7 @@ let originalTableData = []
 function initializeTableFilters(dataType, data) {
   // Guardar datos originales
   originalTableData = [...data]
-  
+
   // Mostrar sección de filtros si hay datos
   if (data && data.length > 0) {
     tableFilters.classList.remove('hidden')
@@ -2867,7 +2925,7 @@ function populateFilterOptions(dataType, data) {
     option.textContent = concepto
     conceptoFilter.appendChild(option)
   })
-  
+
   // Filtro de Vuelta - solo para APK
   if (dataType === 'apk') {
     vueltaFilterContainer.classList.remove('hidden')
@@ -2890,32 +2948,32 @@ function populateFilterOptions(dataType, data) {
  */
 function applyTableFilters() {
   if (originalTableData.length === 0) return
-  
+
   const proveedorText = proveedorFilter.value.toLowerCase().trim()
   const conceptoSelected = conceptoFilter.value
   const vueltaSelected = vueltaFilter.value
-  
+
   // Filtrar datos
   let filteredData = originalTableData.filter(record => {
     // Filtro por proveedor (incluye texto, case insensitive)
     const proveedorValue = (record.proveedor || '').toString().toLowerCase()
     const matchesProveedor = !proveedorText || proveedorValue.includes(proveedorText)
-    
+
     // Filtro por concepto (exacto)
     const matchesConcepto = !conceptoSelected || record.concepto === conceptoSelected
-    
+
     // Filtro por vuelta (exacto, solo para APK)
     const matchesVuelta = !vueltaSelected || record.vuelta === vueltaSelected
-    
+
     return matchesProveedor && matchesConcepto && matchesVuelta
   })
-  
+
   // Actualizar tabla con datos filtrados
   updateTableWithFilteredData(filteredData)
-  
+
   // Actualizar contador de resultados
   updateFilterResultsCount(filteredData.length, originalTableData.length)
-  
+
   // Actualizar totales con datos filtrados
   updateTableTotals(originalTableData, filteredData)
 }
@@ -2927,13 +2985,13 @@ function applyTableFilters() {
 function updateTableWithFilteredData(filteredData) {
   // Obtener tipo de datos actual
   const selectedOption = document.querySelector('input[name="step"]:checked')?.value
-  
+
   // Regenerar solo el tbody de la tabla
   const tbody = resultTable.querySelector('tbody')
   if (!tbody) return
-  
+
   tbody.innerHTML = ''
-  
+
   if (filteredData.length === 0) {
     // Mostrar mensaje de sin resultados
     const tr = document.createElement('tr')
@@ -2947,22 +3005,22 @@ function updateTableWithFilteredData(filteredData) {
     tbody.appendChild(tr)
     return
   }
-  
+
   // Crear filas con datos filtrados
   filteredData.forEach((record, index) => {
     const tr = document.createElement('tr')
-    
+
     // Agregar atributos y event listener para filas clickeables
     tr.setAttribute('data-record-id', record.id)
     tr.setAttribute('data-record-index', index)
     tr.classList.add('table-row-clickable')
-    
+
     // Determinar tipo de datos actual para el modal
     const currentDataType = getSelectedDataType()
     tr.addEventListener('click', () => {
       openIndividualRecordModal(record, currentDataType)
     })
-    
+
     Object.values(record).forEach(value => {
       const td = document.createElement('td')
       // Asegurar que siempre haya contenido, aunque sea vacío
@@ -2993,7 +3051,7 @@ function clearAllTableFilters() {
   proveedorFilter.value = ''
   conceptoFilter.value = ''
   vueltaFilter.value = ''
-  
+
   // Mostrar todos los datos originales
   if (originalTableData.length > 0) {
     updateTableWithFilteredData(originalTableData)
@@ -3011,15 +3069,15 @@ function clearAllTableFilters() {
 function updateTableDisplay() {
   const selectedOption = document.querySelector('input[name="step"]:checked')?.value
   const data = getProcessedDataFromStorage(selectedOption)
-  
+
   // Actualizar información del encabezado
   const dataTypeText = selectedOption === "apk" ? "APK" : "GG"
   const dataTypeDescription = selectedOption === "apk" ? "Datos de archivos APK procesados" : "Datos de archivos GG procesados"
-  
+
   tableTitle.textContent = `Datos ${dataTypeText}`
   tableDescription.textContent = dataTypeDescription
   currentTableType.textContent = dataTypeText
-  
+
   if (data && data.length > 0) {
     showTableWithData(data, selectedOption)
   } else {
@@ -3035,11 +3093,11 @@ function updateTableDisplay() {
 function showTableWithData(data, dataType) {
   // Ocultar estado vacío
   emptyTableState.classList.add("hidden")
-  
+
   // Mostrar tabla y acciones
   resultTable.classList.remove("hidden")
   tableActions.classList.remove("hidden")
-  
+
   // Generar contenido de la tabla
   const headers = getHeadersForDataType(dataType)
   generateTableFromProcessedData(resultTable, data, headers, dataType)
@@ -3051,12 +3109,12 @@ function showTableWithData(data, dataType) {
 function showEmptyTableState() {
   // Mostrar estado vacío
   emptyTableState.classList.remove("hidden")
-  
+
   // Ocultar tabla, acciones y filtros
   resultTable.classList.add("hidden")
   tableActions.classList.add("hidden")
   tableFilters.classList.add("hidden")
-  
+
   // Limpiar datos de filtros
   originalTableData = []
 }
@@ -3084,7 +3142,7 @@ function initializeCollapsibleComponents() {
       toggleComponent('concepts-manager')
     })
   }
-  
+
   // Sustitución Masiva de Conceptos
   const massReplacementHeader = document.querySelector('.mass-replacement-manager .collapsible-header')
   if (massReplacementHeader) {
@@ -3092,7 +3150,7 @@ function initializeCollapsibleComponents() {
       toggleComponent('mass-replacement-manager')
     })
   }
-  
+
   // Prorrateo de Gastos Generales
   const prorrateoHeader = document.querySelector('.prorrateo-section .collapsible-header')
   if (prorrateoHeader) {
@@ -3109,9 +3167,9 @@ function initializeCollapsibleComponents() {
 function toggleComponent(componentClass) {
   const component = document.querySelector(`.${componentClass}`)
   if (!component) return
-  
+
   const isCollapsed = component.classList.contains('collapsed')
-  
+
   if (isCollapsed) {
     expandComponent(component)
   } else {
@@ -3126,24 +3184,24 @@ function toggleComponent(componentClass) {
 function collapseComponent(component) {
   const content = component.querySelector('.collapsible-content')
   if (!content) return
-  
+
   // Obtener altura actual del contenido
   const currentHeight = content.scrollHeight
-  
+
   // Establecer altura actual temporalmente
   content.style.maxHeight = currentHeight + 'px'
-  
+
   // Forzar repaint
   content.offsetHeight
-  
+
   // Agregar clase collapsed
   component.classList.add('collapsed')
-  
+
   // Animar a altura 0
   requestAnimationFrame(() => {
     content.style.maxHeight = '0'
   })
-  
+
   // Guardar estado
   const componentClass = component.classList[0]
   saveCollapseState(componentClass, true)
@@ -3156,21 +3214,21 @@ function collapseComponent(component) {
 function expandComponent(component) {
   const content = component.querySelector('.collapsible-content')
   if (!content) return
-  
+
   // Remover clase collapsed
   component.classList.remove('collapsed')
-  
+
   // Obtener altura natural del contenido
   const naturalHeight = content.scrollHeight
-  
+
   // Establecer altura máxima para la animación
   content.style.maxHeight = naturalHeight + 'px'
-  
+
   // Después de la animación, remover la altura fija
   setTimeout(() => {
     content.style.maxHeight = 'none'
   }, 300)
-  
+
   // Guardar estado
   const componentClass = component.classList[0]
   saveCollapseState(componentClass, false)
@@ -3204,11 +3262,11 @@ function toggleProrrateoComponent() {
   const prorrateoSection = document.querySelector('.prorrateo-section')
   const content = prorrateoSection.querySelector('.prorrateo-content')
   const indicator = prorrateoSection.querySelector('.collapse-indicator')
-  
+
   if (!content || !indicator) return
-  
+
   const isCollapsed = content.classList.contains('collapsed')
-  
+
   if (isCollapsed) {
     // Expandir
     content.classList.remove('collapsed')
@@ -3233,7 +3291,7 @@ function restoreCollapseStates() {
       component.classList.add('collapsed')
     }
   }
-  
+
   // Sustitución Masiva
   if (loadCollapseState('mass-replacement-manager')) {
     const component = document.querySelector('.mass-replacement-manager')
@@ -3241,7 +3299,7 @@ function restoreCollapseStates() {
       component.classList.add('collapsed')
     }
   }
-  
+
   // Prorrateo de Gastos Generales
   if (loadCollapseState('prorrateo-section')) {
     const content = document.querySelector('.prorrateo-section .prorrateo-content')
@@ -3262,19 +3320,19 @@ function restoreCollapseStates() {
  */
 function updateConfirmProrrateoButton() {
   if (!confirmProrrateoBtn) return
-  
+
   // Verificar si existen todos los datos necesarios
   const processType = getSelectedProcessType()
   const processData = getProcessData(processType)
-  
+
   const hasMainData = processData.data && processData.data.length > 0
   const hasGgData = processData.gg && processData.gg.length > 0
   const hasSegmentList = processData.segments && processData.segments.length > 0
-  
+
   const allDataAvailable = hasMainData && hasGgData && hasSegmentList
-  
+
   confirmProrrateoBtn.disabled = !allDataAvailable
-  
+
   if (allDataAvailable) {
     confirmProrrateoBtn.textContent = '✓ Confirmar Prorrateo'
     confirmProrrateoBtn.title = 'Todos los datos están listos para el prorrateo'
@@ -3293,19 +3351,19 @@ function updateConfirmProrrateoButton() {
  */
 function showProrrateoSection() {
   if (!prorrateoSection) return
-  
+
   // Verificar nuevamente que todos los datos estén disponibles
   if (confirmProrrateoBtn.disabled) {
     showModal('No se pueden generar los datos de prorrateo. Verifica que tengas datos APK, GG y configuración de segmentos.')
     return
   }
-  
+
   // Mostrar la sección
   prorrateoSection.classList.remove('hidden')
-  
+
   // Actualizar información del resumen
   updateProrrateoSummary()
-  
+
   // Scroll hacia la sección
   prorrateoSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
@@ -3320,17 +3378,17 @@ function updateProrrateoSummary() {
     const processData = getProcessData(processType)
     const ggData = processData.gg || []
     const uniqueConcepts = [...new Set(ggData.map(record => record.concepto).filter(Boolean))]
-    
+
     // Obtener datos de segmentos
     const segmentList = processData.segments || []
     const totalCerdosValue = segmentList.reduce((sum, segment) => sum + (segment.count || 0), 0)
-    
+
     // Actualizar elementos del resumen
     if (conceptsCount) conceptsCount.textContent = uniqueConcepts.length
     if (vueltasCount) vueltasCount.textContent = segmentList.length
     if (totalCerdos) totalCerdos.textContent = totalCerdosValue.toLocaleString()
     if (registrosGenerados) registrosGenerados.textContent = uniqueConcepts.length * segmentList.length
-    
+
   } catch (error) {
     console.error('Error actualizando resumen de prorrateo:', error)
   }
@@ -3346,35 +3404,35 @@ function generateProrrateoData() {
     const processData = getProcessData(processType)
     const ggData = processData.gg || []
     const segmentList = processData.segments || []
-    
+
     if (ggData.length === 0 || segmentList.length === 0) {
       showModal('No hay datos suficientes para generar el prorrateo.')
       return
     }
-    
+
     // Calcular totales por concepto
     const conceptTotals = new Map()
     ggData.forEach(record => {
       const concepto = record.concepto
       const importe = parseFloat(record.importe) || 0
-      
+
       if (concepto && importe > 0) {
         conceptTotals.set(concepto, (conceptTotals.get(concepto) || 0) + importe)
       }
     })
-    
+
     // Calcular total de cerdos
     const totalCerdosValue = segmentList.reduce((sum, segment) => sum + (segment.count || 0), 0)
-    
+
     if (totalCerdosValue === 0) {
       showModal('El total de cerdos no puede ser 0. Verifica la configuración de segmentos.')
       return
     }
-    
+
     // Generar registros de prorrateo
     const prorrateoRecords = []
     let recordId = 1
-    
+
     // Obtener fecha (último día del mes anterior)
     const currentDate = new Date()
     // Cambiar prevMonth por currentMonth
@@ -3387,7 +3445,7 @@ function generateProrrateoData() {
       segmentList.forEach(segment => {
         const porcentaje = segment.count / totalCerdosValue
         const importeProrrateo = totalImporte * porcentaje
-        
+
         const record = {
           id: recordId++,
           fecha: fechaProrrateo,
@@ -3401,23 +3459,23 @@ function generateProrrateoData() {
           mes: monthString,
           año: year
         }
-        
+
         prorrateoRecords.push(record)
       })
     })
-    
+
     // Guardar datos de prorrateo en la nueva estructura
     processData.prorrateo = prorrateoRecords
     saveProcessData(processType, processData)
-    
+
     // Generar tabla
     generateProrrateoTable(prorrateoRecords)
-    
+
     // Actualizar resumen
     if (registrosGenerados) registrosGenerados.textContent = prorrateoRecords.length
-    
+
     showToast(`¡Prorrateo generado! ${prorrateoRecords.length} registros creados.`)
-    
+
   } catch (error) {
     console.error('Error generando prorrateo:', error)
     showModal('Error al generar el prorrateo. Verifica que todos los datos sean válidos.')
@@ -3434,7 +3492,7 @@ function formatDateForProrrateo(date) {
   const day = String(date.getDate()).padStart(2, '0')
   const month = months[date.getMonth()]
   const year = date.getFullYear()
-  
+
   return `${day}/${month}/${year}`
 }
 
@@ -3457,35 +3515,35 @@ function parseDateForProrrateo(date) {
  */
 function generateProrrateoTable(prorrateoRecords) {
   if (!prorrateoTable) return
-  
+
   // Ocultar estado vacío y mostrar tabla
   emptyProrrateoState.classList.add('hidden')
   prorrateoTable.classList.remove('hidden')
-  
+
   // Limpiar tabla
   prorrateoTable.innerHTML = ''
-  
+
   // Crear encabezados (misma estructura que APK)
   const headers = ['ID', 'Fecha', 'Egresos', 'Folio', 'Proveedor', 'Factura', 'Importe', 'Concepto', 'Vuelta', 'Mes', 'Año']
-  
+
   const thead = document.createElement('thead')
   const headerRow = document.createElement('tr')
-  
+
   headers.forEach(header => {
     const th = document.createElement('th')
     th.textContent = header
     headerRow.appendChild(th)
   })
-  
+
   thead.appendChild(headerRow)
   prorrateoTable.appendChild(thead)
-  
+
   // Crear cuerpo de tabla
   const tbody = document.createElement('tbody')
-  
+
   prorrateoRecords.forEach(record => {
     const tr = document.createElement('tr')
-    
+
     // Crear celdas en el orden de los headers
     const values = [
       record.id,
@@ -3500,7 +3558,7 @@ function generateProrrateoTable(prorrateoRecords) {
       record.mes,
       record.año
     ]
-    
+
     values.forEach((value, index) => {
       const td = document.createElement('td')
       if (value !== null && value !== undefined) {
@@ -3515,12 +3573,12 @@ function generateProrrateoTable(prorrateoRecords) {
       }
       tr.appendChild(td)
     })
-    
+
     tbody.appendChild(tr)
   })
-  
+
   prorrateoTable.appendChild(tbody)
-  
+
   // Actualizar totales del prorrateo
   updateProrrateoTotals(prorrateoRecords)
 }
@@ -3533,27 +3591,27 @@ function copyProrrateoToClipboard() {
     showModal('No hay datos de prorrateo para copiar. Genera primero los datos.')
     return
   }
-  
+
   const rows = prorrateoTable.querySelectorAll('tr')
   if (rows.length === 0) {
     showModal('La tabla de prorrateo está vacía.')
     return
   }
-  
+
   let tableText = ''
-  
+
   rows.forEach((row, index) => {
     const cells = row.querySelectorAll('th, td')
     const rowData = Array.from(cells)
       .map(cell => cell.textContent)
       .join('\t')
     tableText += rowData
-    
+
     if (index < rows.length - 1) {
       tableText += '\n'
     }
   })
-  
+
   navigator.clipboard
     .writeText(tableText)
     .then(() => {
@@ -3570,30 +3628,30 @@ function copyProrrateoToClipboard() {
  */
 function downloadProrrateoAsExcel() {
   const prorrateoData = localStorage.getItem('prorrateoData')
-  
+
   if (!prorrateoData) {
     showModal('No hay datos de prorrateo para descargar. Genera primero los datos.')
     return
   }
-  
+
   try {
     const data = JSON.parse(prorrateoData)
-    
+
     // Crear workbook
     const wb = XLSX.utils.book_new()
-    
+
     // Convertir datos a formato de hoja
     const ws = XLSX.utils.json_to_sheet(data)
-    
+
     // Agregar hoja al workbook
     XLSX.utils.book_append_sheet(wb, ws, 'Prorrateo')
-    
+
     // Descargar archivo
     const fileName = `prorrateo_${new Date().toISOString().split('T')[0]}.xlsx`
     XLSX.writeFile(wb, fileName)
-    
+
     showToast('¡Archivo de prorrateo descargado correctamente!')
-    
+
   } catch (error) {
     console.error('Error descargando archivo:', error)
     showModal('Error al generar el archivo de descarga.')

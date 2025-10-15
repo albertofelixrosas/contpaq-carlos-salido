@@ -1,1 +1,9 @@
-Lo que sucede es que quiero implementar el formateo del importe en las tablas con `Intl.NumberFormat`. El usuario ve el numero de los importes sin formato, y le parece algo dificil poder visualizar el valor real pues no esta impuesto a leer numeros sin los puntos y comas que tienen normalmente los numeros que ve formateados en excel. Quisiera pedirte que en las tablas, en el campo del importe / cargo / pago del movimiento, se aplique este formato, por supuesto, indistintamente de si es apk, epk y gg, tanto para la tabla de la data en estos como en el prorrateo. Y solo para aclarar, esto es para la presentación, no quiero que los datos numericos se guarden formateados en string en la data, el formateo solo es para mostrar los numeros con formato en el document (DOM).
+Quisiera que revisaras el uso de la variable `apkDataArray` y `ggDataArray`. Existe una función llamada `changeRecordConcept` que al parecer da un error debido al uso de esta variable. En la consola, me aprece este texto
+
+```txt
+script.js:1952 Uncaught TypeError: Cannot read properties of undefined (reading 'concepto')
+    at changeRecordConcept (script.js:1952:59)
+    at HTMLButtonElement.<anonymous> (script.js:251:3)
+```
+
+Quisiera que hicieras un chequeo y me digas antes de hacer lo que sea, que proposito cumplen esas variables para saber si las vamos a remover, o si vamos a cambiar las secciones donde se llaman.
