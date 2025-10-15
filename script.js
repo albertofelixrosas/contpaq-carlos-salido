@@ -709,12 +709,12 @@ function createGenericTableBody(data) {
 
   data.forEach((rowData) => {
     const tr = document.createElement("tr")
-    Object.entries(rowData).forEach(([key, value], index) => {
+    Object.entries(rowData).forEach(([key, value]) => {
       const td = document.createElement("td")
       // Asegurar que siempre haya contenido, aunque sea vacío
       if (value !== null && value !== undefined) {
-        // Aplicar formato de moneda al campo "Importe" (índice 6)
-        if (index === 6) {
+        // Aplicar formato de moneda si la columna contiene "importe"
+        if (key.toLowerCase().includes('importe')) {
           td.textContent = formatCurrency(value)
         } else {
           td.textContent = String(value)
@@ -722,7 +722,6 @@ function createGenericTableBody(data) {
       } else {
         td.textContent = ''
       }
-      tr.appendChild(td)
       tr.appendChild(td)
     })
     tbody.appendChild(tr)
@@ -1061,8 +1060,6 @@ function createGgTableBody(ggData) {
       } else {
         td.textContent = ''
       }
-      tr.appendChild(td)
-
       tr.appendChild(td)
     })
     // Se agrega la fila al cuerpo de la tabla
@@ -3021,10 +3018,19 @@ function updateTableWithFilteredData(filteredData) {
       openIndividualRecordModal(record, currentDataType)
     })
 
-    Object.values(record).forEach(value => {
+    Object.entries(record).forEach(([key, value], index) => {
       const td = document.createElement('td')
       // Asegurar que siempre haya contenido, aunque sea vacío
-      td.textContent = value !== null && value !== undefined ? String(value) : ""
+      if (key.toLowerCase().includes('importe')) {
+        if (typeof value === 'string') {
+          const numericValue = parseFloat(value.replace(/[^0-9.-]+/g, ''))
+          td.textContent = isNaN(numericValue) ? '' : formatCurrency(numericValue)
+        } else {
+          td.textContent = value === 0 ? '' : formatCurrency(value)
+        }
+      } else {
+        td.textContent = value !== null && value !== undefined ? String(value) : ""
+      }
       tr.appendChild(td)
     })
     tbody.appendChild(tr)
