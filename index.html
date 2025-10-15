@@ -395,16 +395,12 @@
      <!-- Panel flotante para selección de tipo de datos -->
     <div id="dataTypeSelector" class="data-type-selector">
         <div class="data-type-container">
-            <div class="data-type-header">
-                <h4 class="data-type-title">Tipo de Procesamiento</h4>
-                <span class="data-type-description">Selecciona el tipo de datos</span>
-            </div>
             <div id="radioOptions" class="radio-options">
                 <label class="radio-option">
                     <input type="radio" name="step" value="apk" class="radio-input" checked>
                     <span class="radio-label">
-                        <strong>APK's</strong>
-                        <small>Procesamiento de APK</small>
+                        <strong>Vueltas</strong>
+                        <small>Procesamiento de APK's y EPK's</small>
                     </span>
                 </label>
                 <label class="radio-option">
@@ -414,6 +410,15 @@
                         <small>Procesamiento de GG</small>
                     </span>
                 </label>
+            </div>
+            <div class="process-type-selector">
+                <label for="processTypeSelect" class="process-type-label">
+                    Tipo de Proceso:
+                </label>
+                <select id="processTypeSelect" class="process-type-select">
+                    <option value="apk">APK's</option>
+                    <option value="epk">EPK's</option>
+                </select>
             </div>
             <div class="data-type-actions">
                 <button id="confirmProrrateoBtn" class="btn-confirm-prorrateo" type="button" disabled>

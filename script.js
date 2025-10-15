@@ -67,6 +67,7 @@ const currentTableType = document.querySelector("#currentTableType")
 
 // Elementos del panel flotante de tipo de datos
 const dataTypeSelector = document.querySelector("#dataTypeSelector")
+const processTypeSelect = document.querySelector("#processTypeSelect")
 
 // Elementos de los filtros de tabla
 const tableFilters = document.querySelector("#tableFilters")
@@ -344,6 +345,14 @@ downloadProrrateoBtn.addEventListener('click', () => {
   downloadProrrateoAsExcel()
 })
 
+// Evento para cambios en el selector de tipo de proceso
+processTypeSelect.addEventListener('change', () => {
+  updateSegmentEditorVisibility()
+  updateTableDisplay()
+  updateMassReplacementVisibility()
+  updateConfirmProrrateoButton()
+})
+
 // ========================================
 // FUNCIONES DE MODAL
 // ========================================
@@ -367,6 +376,51 @@ function showModal(message) {
  */
 function hideModal() {
   modal.classList.add("hidden")
+}
+
+// ========================================
+// FUNCIONES DE MANEJO DE ESTRUCTURA DE DATOS
+// ========================================
+
+/**
+ * Obtiene el tipo de proceso seleccionado (apk o epk)
+ * @returns {string} Tipo de proceso actual
+ */
+function getSelectedProcessType() {
+  return processTypeSelect?.value || 'apk';
+}
+
+/**
+ * Inicializa la estructura de datos para un tipo de proceso
+ * @param {string} processType - Tipo de proceso (apk o epk)
+ * @returns {Object} Estructura de datos inicializada
+ */
+function initializeProcessData(processType) {
+  return {
+    data: [],
+    segments: [],
+    gg: [],
+    prorrateo: []
+  };
+}
+
+/**
+ * Obtiene los datos de un tipo de proceso desde localStorage
+ * @param {string} processType - Tipo de proceso (apk o epk)
+ * @returns {Object} Datos del proceso
+ */
+function getProcessData(processType) {
+  const stored = localStorage.getItem(processType);
+  return stored ? JSON.parse(stored) : initializeProcessData(processType);
+}
+
+/**
+ * Guarda los datos de un tipo de proceso en localStorage
+ * @param {string} processType - Tipo de proceso (apk o epk)
+ * @param {Object} data - Datos a guardar
+ */
+function saveProcessData(processType, data) {
+  localStorage.setItem(processType, JSON.stringify(data));
 }
 
 // ========================================
@@ -626,12 +680,19 @@ async function processExcelAndGenerateTable(file, dataType, tableElement) {
  */
 function getProcessedDataFromStorage(dataType) {
   try {
-    const storageKey = dataType === "apk" ? "apkData" : "ggData"
-    const data = localStorage.getItem(storageKey)
-    return data ? JSON.parse(data) : []
+    const processType = getSelectedProcessType();
+    const processData = getProcessData(processType);
+    
+    if (dataType === "apk" || dataType === "epk") {
+      return processData.data || [];
+    } else if (dataType === "gg") {
+      return processData.gg || [];
+    }
+    
+    return [];
   } catch (error) {
-    console.error(`Error obteniendo datos ${dataType} de localStorage:`, error)
-    return []
+    console.error(`Error obteniendo datos ${dataType} de localStorage:`, error);
+    return [];
   }
 }
 
@@ -749,20 +810,21 @@ function createApkTableBody(apkData) {
  * @param {Set<string>} segmentNames - Nombres de segmentos encontrados
  */
 function saveApkDataToLocalStorage(apkData, segmentNames) {
-  // Borrar apkData previo de localStorage
-  localStorage.removeItem('apkData')
+  const processType = getSelectedProcessType();
+  const processData = getProcessData(processType);
   
-  // Guardar los datos APK
-  localStorage.setItem('apkData', JSON.stringify(apkData))
+  // Actualizar los datos principales y segmentos
+  processData.data = apkData;
+  processData.segments = Array.from(segmentNames).map(segment => ({
+    segment,
+    count: 0,
+  }));
   
-  // Se crea el listado de segmentos encontrados al localStorage
-  const segmentList = Array.from(segmentNames).map(segment => {
-    return {
-      segment,
-      count: 0,
-    }
-  })
-  localStorage.setItem('segmentList', JSON.stringify(segmentList))
+  // Guardar la estructura completa
+  saveProcessData(processType, processData);
+  
+  // Mantener compatibilidad temporal con el sistema anterior
+  localStorage.setItem('segmentList', JSON.stringify(processData.segments));
 }
 
 /**
@@ -894,11 +956,14 @@ function createGgTableBody(ggData) {
  * @param {Array<Object>} ggData - Datos GG a guardar
  */
 function saveGgDataToLocalStorage(ggData) {
-  // Borrar ggData previo de localStorage
-  localStorage.removeItem('ggData')
+  const processType = getSelectedProcessType();
+  const processData = getProcessData(processType);
   
-  // Guardar los datos GG
-  localStorage.setItem('ggData', JSON.stringify(ggData))
+  // Actualizar los datos de gastos generales
+  processData.gg = ggData;
+  
+  // Guardar la estructura completa
+  saveProcessData(processType, processData);
 }
 
 /**
@@ -1092,7 +1157,9 @@ function parseDateString(dateString) {
  */
 function updateSegmentEditorVisibility() {
   const segmentEditor = document.querySelector(".segment-editor")
-  const segmentList = JSON.parse(localStorage.getItem("segmentList")) || []
+  const processType = getSelectedProcessType();
+  const processData = getProcessData(processType);
+  const segmentList = processData.segments || [];
 
   if (segmentList.length > 0) {
     segmentEditor.classList.remove("hidden")
@@ -2392,19 +2459,34 @@ function handleHeaderClick(event) {
  * @returns {Array<Object>} Datos procesados
  */
 function getCurrentData(dataType) {
-  const key = dataType === 'apk' ? 'apkData' : 'ggData'
-  const storedData = localStorage.getItem(key)
-  return storedData ? JSON.parse(storedData) : []
+  const processType = getSelectedProcessType();
+  const processData = getProcessData(processType);
+  
+  if (dataType === 'apk' || dataType === 'epk') {
+    return processData.data || [];
+  } else if (dataType === 'gg') {
+    return processData.gg || [];
+  }
+  
+  return [];
 }
 
 /**
  * Guarda los datos ordenados en localStorage
  * @param {Array<Object>} sortedData - Datos ordenados
- * @param {string} dataType - Tipo de datos ('apk' o 'gg')
+ * @param {string} dataType - Tipo de datos ('apk', 'epk' o 'gg')
  */
 function saveCurrentData(sortedData, dataType) {
-  const key = dataType === 'apk' ? 'apkData' : 'ggData'
-  localStorage.setItem(key, JSON.stringify(sortedData))
+  const processType = getSelectedProcessType();
+  const processData = getProcessData(processType);
+  
+  if (dataType === 'apk' || dataType === 'epk') {
+    processData.data = sortedData;
+  } else if (dataType === 'gg') {
+    processData.gg = sortedData;
+  }
+  
+  saveProcessData(processType, processData);
 }
 
 /**

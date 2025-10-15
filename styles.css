@@ -1298,6 +1298,40 @@ body {
   accent-color: #3a86ff;
 }
 
+/* Estilo para el selector de tipo de proceso */
+.process-type-selector {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+
+.process-type-label {
+  display: block;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.process-type-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: white;
+  color: #495057;
+  transition: all 0.2s ease;
+}
+
+.process-type-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
 .radio-label {
   display: flex;
   flex-direction: column;
