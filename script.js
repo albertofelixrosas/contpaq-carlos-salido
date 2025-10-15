@@ -963,9 +963,25 @@ function processGgDataFromExcel(rawData) {
   // Variables para mantener el estado actual de los valores del segmento y cuenta contable
   let currentAccountName = ""
   let currentSegmentName = ""
+  let currentAccountCode = ""
   const segmentNames = new Set()
   const ggData = []
   let recordId = 1  // ID auto-incremental comenzando en 1
+
+  // Conceptos predefinidos
+  // Quiero que pase de ser un array a ser un objeto JSON
+  const preLoadConceptMap = {
+    "OBRA CIVIL": "OBRA CIVIL",
+    "DIESEL": "DIESEL",
+    "EQ. TRANSPORTE": "EQ. TRANSPORTE",
+    "VARIOS": "VARIOS",
+    "GASOLINA": "GASOLINA",
+    "ADMON SUELDOS": "ADMON SUELDOS",
+    "DEPRECIACIONES": "DEPRECIACIONES",
+    "SUELDOS Y SALARIOS": "SUELDOS Y SALARIOS"
+  }
+  
+  // const preLoadConceptList = ["OBRA CIVIL", "DIESEL", "EQ. TRANSPORTE", "VARIOS", "GASOLINA", "ADMON SUELDOS", "DEPRECIACIONES", "SUELDOS Y SALARIOS"]
 
   // Se lee las filas de principio a fin
   for (let i = 1; i < rawData.length; i++) {
@@ -981,6 +997,7 @@ function processGgDataFromExcel(rawData) {
     if (firstCell.match(accountNumberRegex)) {
       // La segunda celda es el nombre de la cuenta contable, y se guarda en la variable de estado
       currentAccountName = String(row?.[1] || '').trim()
+      currentAccountCode = firstCell
     }
     // Segmento:  100 GG
     // 2️⃣ Si la primera celda empieza con "segmento"
@@ -998,6 +1015,30 @@ function processGgDataFromExcel(rawData) {
 
       const { monthString, year } = parseDateString(rowObject.fecha)
 
+      let finalConcept = currentAccountName
+      
+      // Extraer la subcuenta del código contable
+      // Ejemplo: 133-037-000-000-00 -> subcuenta 037 para finalmente 37
+      // La subcuenta es la segunda parte del código separado por guiones
+      const subAccountCode = parseInt(currentAccountCode.split('-').slice(1, 2).join('') || 0) 
+      if (['GRANJ', 'ADMIN'].some(word => rowObject.concepto.startsWith(word))) {
+        if (rowObject.concepto.startsWith('GRANJ')) {
+          finalConcept = preLoadConceptMap["SUELDOS Y SALARIOS"]
+        } else if (rowObject.concepto.startsWith('ADMIN')) {
+          finalConcept = preLoadConceptMap["ADMON SUELDOS"]
+        }
+      } else if ([20, 34, 37, 39].includes(subAccountCode)) {
+        finalConcept = preLoadConceptMap["VARIOS"]
+      } else if ([30].includes(subAccountCode)) {
+        finalConcept = preLoadConceptMap["DEPRECIACIONES"]
+      } else if ([25].includes(subAccountCode)) {
+        finalConcept = preLoadConceptMap["EQ. TRANSPORTE"]
+      } else if ([18].includes(subAccountCode)) {
+        finalConcept = preLoadConceptMap["DIESEL"]
+      } else if ([17].includes(subAccountCode)) {
+        finalConcept = preLoadConceptMap["GASOLINA"]
+      }
+
       const newRowObject = {
         id: recordId++,  // ID auto-incremental único
         fecha: rowObject.fecha,
@@ -1006,7 +1047,7 @@ function processGgDataFromExcel(rawData) {
         proveedor: rowObject.concepto || "",
         factura: rowObject.ref || "",
         importe: rowObject.cargos || 0,
-        concepto: currentAccountName,
+        concepto: finalConcept,
         vuelta: currentSegmentName, // En GG también se llama 'vuelta' internamente pero se muestra como 'Segmento'
         mes: monthString,
         año: year,

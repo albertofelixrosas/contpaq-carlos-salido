@@ -1,0 +1,3 @@
+En el metodo `processGgDataFromExcel` hay un par de detalles que quiero cambiar. En el excel, el formato tiene una estructura la cual tiene un tipo de fila en particular la cual contiene la información de la cuenta contable. El caso es, que el primer elemento de la fila tiene un codigo con un formato como el siguiente: `132-017-036-000-00`. Aquí lo que sucede, es que el formato tiene un significado, practicamente es una sucesión donde cada numero a la derecha es una sub categoria de la que se encuentra la izquierda, siendo la que esta hasta el principio la cuenta maestra, por así decirlo. Lo que te quiero decir es, que quisiera hacer unos ajusted hardcoded, que me solicitaron pues es para ahorrar tiempo.
+
+Quisiera que usaras el metodo 
