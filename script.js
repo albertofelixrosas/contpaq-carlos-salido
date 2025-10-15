@@ -822,9 +822,6 @@ function saveApkDataToLocalStorage(apkData, segmentNames) {
   
   // Guardar la estructura completa
   saveProcessData(processType, processData);
-  
-  // Mantener compatibilidad temporal con el sistema anterior
-  localStorage.setItem('segmentList', JSON.stringify(processData.segments));
 }
 
 /**
@@ -1178,7 +1175,9 @@ function updateSegmentEditorVisibility() {
  */
 function populateSegmentForm() {
   const segmentGrid = document.querySelector("#segmentGrid")
-  const segmentList = JSON.parse(localStorage.getItem("segmentList")) || []
+  const processType = getSelectedProcessType()
+  const processData = getProcessData(processType)
+  const segmentList = processData.segments || []
 
   // Limpiar contenido existente
   segmentGrid.innerHTML = ""
@@ -1218,7 +1217,12 @@ function updateSegmentData() {
     return { segment, count }
   })
 
-  localStorage.setItem("segmentList", JSON.stringify(updatedSegmentList))
+  // Guardar en la nueva estructura de datos
+  const processType = getSelectedProcessType()
+  const processData = getProcessData(processType)
+  processData.segments = updatedSegmentList
+  saveProcessData(processType, processData)
+
   showToast("Segmentos actualizados correctamente")
   populateSegmentForm()
   updateConfirmProrrateoButton()
@@ -3145,11 +3149,14 @@ function updateConfirmProrrateoButton() {
   if (!confirmProrrateoBtn) return
   
   // Verificar si existen todos los datos necesarios
-  const hasApkData = localStorage.getItem('apkData') && JSON.parse(localStorage.getItem('apkData')).length > 0
-  const hasGgData = localStorage.getItem('ggData') && JSON.parse(localStorage.getItem('ggData')).length > 0
-  const hasSegmentList = localStorage.getItem('segmentList') && JSON.parse(localStorage.getItem('segmentList')).length > 0
+  const processType = getSelectedProcessType()
+  const processData = getProcessData(processType)
   
-  const allDataAvailable = hasApkData && hasGgData && hasSegmentList
+  const hasMainData = processData.data && processData.data.length > 0
+  const hasGgData = processData.gg && processData.gg.length > 0
+  const hasSegmentList = processData.segments && processData.segments.length > 0
+  
+  const allDataAvailable = hasMainData && hasGgData && hasSegmentList
   
   confirmProrrateoBtn.disabled = !allDataAvailable
   
@@ -3159,7 +3166,7 @@ function updateConfirmProrrateoButton() {
   } else {
     confirmProrrateoBtn.textContent = '⚠ Datos Incompletos'
     const missing = []
-    if (!hasApkData) missing.push('APK')
+    if (!hasMainData) missing.push(processType.toUpperCase())
     if (!hasGgData) missing.push('GG')
     if (!hasSegmentList) missing.push('Segmentos')
     confirmProrrateoBtn.title = `Faltan datos: ${missing.join(', ')}`
@@ -3193,12 +3200,14 @@ function showProrrateoSection() {
  */
 function updateProrrateoSummary() {
   try {
-    // Obtener datos de GG únicos por concepto
-    const ggData = JSON.parse(localStorage.getItem('ggData') || '[]')
+    // Obtener datos del proceso actual
+    const processType = getSelectedProcessType()
+    const processData = getProcessData(processType)
+    const ggData = processData.gg || []
     const uniqueConcepts = [...new Set(ggData.map(record => record.concepto).filter(Boolean))]
     
     // Obtener datos de segmentos
-    const segmentList = JSON.parse(localStorage.getItem('segmentList') || '[]')
+    const segmentList = processData.segments || []
     const totalCerdosValue = segmentList.reduce((sum, segment) => sum + (segment.count || 0), 0)
     
     // Actualizar elementos del resumen
@@ -3217,9 +3226,11 @@ function updateProrrateoSummary() {
  */
 function generateProrrateoData() {
   try {
-    // Obtener datos necesarios
-    const ggData = JSON.parse(localStorage.getItem('ggData') || '[]')
-    const segmentList = JSON.parse(localStorage.getItem('segmentList') || '[]')
+    // Obtener datos del proceso actual
+    const processType = getSelectedProcessType()
+    const processData = getProcessData(processType)
+    const ggData = processData.gg || []
+    const segmentList = processData.segments || []
     
     if (ggData.length === 0 || segmentList.length === 0) {
       showModal('No hay datos suficientes para generar el prorrateo.')
@@ -3280,8 +3291,9 @@ function generateProrrateoData() {
       })
     })
     
-    // Guardar datos de prorrateo en localStorage
-    localStorage.setItem('prorrateoData', JSON.stringify(prorrateoRecords))
+    // Guardar datos de prorrateo en la nueva estructura
+    processData.prorrateo = prorrateoRecords
+    saveProcessData(processType, processData)
     
     // Generar tabla
     generateProrrateoTable(prorrateoRecords)
