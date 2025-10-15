@@ -78,6 +78,13 @@ const vueltaFilter = document.querySelector("#vueltaFilter")
 const vueltaFilterContainer = document.querySelector("#vueltaFilterContainer")
 const filterResultsCount = document.querySelector("#filterResultsCount")
 
+// Elementos de totales de tabla
+const tableTotals = document.querySelector("#tableTotals")
+const totalGeneral = document.querySelector("#totalGeneral")
+const totalFiltrado = document.querySelector("#totalFiltrado")
+const prorrateoTotals = document.querySelector("#prorrateoTotals")
+const totalProrrateo = document.querySelector("#totalProrrateo")
+
 // Elementos del componente de prorrateo
 const confirmProrrateoBtn = document.querySelector("#confirmProrrateoBtn")
 const prorrateoSection = document.querySelector("#prorrateoSection")
@@ -423,6 +430,72 @@ function saveProcessData(processType, data) {
   localStorage.setItem(processType, JSON.stringify(data));
 }
 
+/**
+ * Calcula y actualiza los totales de la tabla principal
+ * @param {Array<Object>} allData - Todos los datos de la tabla
+ * @param {Array<Object>} filteredData - Datos filtrados actualmente visibles
+ */
+function updateTableTotals(allData, filteredData) {
+  if (!tableTotals || !totalGeneral || !totalFiltrado) return;
+  
+  const numberFormatter = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+  });
+  
+  // Calcular total general
+  const totalGeneralValue = allData.reduce((sum, record) => {
+    const importe = parseFloat(record.importe) || 0;
+    return sum + importe;
+  }, 0);
+  
+  // Calcular total filtrado
+  const totalFiltradoValue = filteredData.reduce((sum, record) => {
+    const importe = parseFloat(record.importe) || 0;
+    return sum + importe;
+  }, 0);
+  
+  // Actualizar elementos del DOM
+  totalGeneral.textContent = numberFormatter.format(totalGeneralValue);
+  totalFiltrado.textContent = numberFormatter.format(totalFiltradoValue);
+  
+  // Mostrar la sección de totales si hay datos
+  if (allData.length > 0) {
+    tableTotals.classList.remove("hidden");
+  } else {
+    tableTotals.classList.add("hidden");
+  }
+}
+
+/**
+ * Calcula y actualiza el total de la tabla de prorrateo
+ * @param {Array<Object>} prorrateoData - Datos del prorrateo
+ */
+function updateProrrateoTotals(prorrateoData) {
+  if (!prorrateoTotals || !totalProrrateo) return;
+  
+  const numberFormatter = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+  });
+  
+  // Calcular total del prorrateo
+  const totalProrrateoValue = prorrateoData.reduce((sum, record) => {
+    const importe = parseFloat(record.importe) || 0;
+    return sum + importe;
+  }, 0);
+  
+  // Actualizar elemento del DOM
+  totalProrrateo.textContent = numberFormatter.format(totalProrrateoValue);
+  
+  // Mostrar la sección de totales si hay datos
+  if (prorrateoData.length > 0) {
+    prorrateoTotals.classList.remove("hidden");
+  } else {
+    prorrateoTotals.classList.add("hidden");
+  }
+}
+
 // ========================================
 // FUNCIONES DE TABLA - ARQUITECTURA MODULAR
 // ========================================
@@ -601,6 +674,9 @@ function generateTableFromProcessedData(tableElement, processedData, headers, da
     
     // 5. Inicializar filtros con los nuevos datos
     initializeTableFilters(dataType, processedData)
+    
+    // 6. Actualizar totales de la tabla
+    updateTableTotals(processedData, processedData)
     
   } catch (error) {
     console.error(`Error generando tabla ${dataType}:`, error)
@@ -2803,6 +2879,9 @@ function applyTableFilters() {
   
   // Actualizar contador de resultados
   updateFilterResultsCount(filteredData.length, originalTableData.length)
+  
+  // Actualizar totales con datos filtrados
+  updateTableTotals(originalTableData, filteredData)
 }
 
 /**
@@ -3396,6 +3475,9 @@ function generateProrrateoTable(prorrateoRecords) {
   })
   
   prorrateoTable.appendChild(tbody)
+  
+  // Actualizar totales del prorrateo
+  updateProrrateoTotals(prorrateoRecords)
 }
 
 /**

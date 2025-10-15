@@ -28,6 +28,7 @@ body {
   width: 100%;
   max-width: 1250px;
   margin: 0 auto;
+  margin-bottom: 120px;
 }
 
 /* ========================================
@@ -1038,6 +1039,78 @@ body {
   font-size: 0.85rem;
   color: #6c757d;
   font-style: italic;
+}
+
+/* ========================================
+   ESTILOS PARA SECCIÓN DE TOTALES
+   ======================================== */
+
+.table-totals {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.totals-header {
+  margin-bottom: 0.75rem;
+}
+
+.totals-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #495057;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.totals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.total-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.total-label {
+  font-weight: 500;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.total-value {
+  font-weight: 700;
+  color: #28a745;
+  font-size: 1.1rem;
+  text-align: right;
+}
+
+/* Responsive para totales */
+@media (max-width: 768px) {
+  .totals-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .total-item {
+    padding: 0.5rem;
+  }
+  
+  .total-value {
+    font-size: 1rem;
+  }
 }
 
 /* Estado oculto para filtro de vuelta en GG */
