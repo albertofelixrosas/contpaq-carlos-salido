@@ -431,6 +431,21 @@ function saveProcessData(processType, data) {
 }
 
 /**
+ * Formatea un valor numérico como moneda mexicana
+ * @param {number|string} value - Valor a formatear
+ * @returns {string} - Valor formateado como moneda
+ */
+function formatCurrency(value) {
+  const numberFormatter = new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+  });
+  
+  const numericValue = parseFloat(value) || 0;
+  return numberFormatter.format(numericValue);
+}
+
+/**
  * Calcula y actualiza los totales de la tabla principal
  * @param {Array<Object>} allData - Todos los datos de la tabla
  * @param {Array<Object>} filteredData - Datos filtrados actualmente visibles
@@ -694,10 +709,19 @@ function createGenericTableBody(data) {
   
   data.forEach((rowData) => {
     const tr = document.createElement("tr")
-    Object.values(rowData).forEach((value) => {
+    Object.entries(rowData).forEach(([key, value]) => {
       const td = document.createElement("td")
       // Asegurar que siempre haya contenido, aunque sea vacío
-      td.textContent = value !== null && value !== undefined ? String(value) : ""
+      if (value !== null && value !== undefined) {
+        // Aplicar formato de moneda si la columna contiene "importe"
+        if (key.toLowerCase().includes('importe')) {
+          td.textContent = formatCurrency(value)
+        } else {
+          td.textContent = String(value)
+        }
+      } else {
+        td.textContent = ""
+      }
       tr.appendChild(td)
     })
     tbody.appendChild(tr)
@@ -867,10 +891,16 @@ function createApkTableBody(apkData) {
     })
     
     // Se agregan las celdas a la fila asegurando que cada campo tenga su td
-    Object.values(rowData).forEach((value) => {
+    Object.entries(rowData).forEach(([key, value]) => {
       const td = document.createElement("td")
-      // Asegurar que siempre haya contenido, aunque sea vacío
-      td.textContent = value !== null && value !== undefined ? String(value) : ""
+      
+      // Formatear importes usando la función utilitaria
+      if (key === "importe") {
+        td.textContent = formatCurrency(value)
+      } else {
+        td.textContent = value !== null && value !== undefined ? String(value) : ""
+      }
+      
       tr.appendChild(td)
     })
     // Se agrega la fila al cuerpo de la tabla
@@ -1011,10 +1041,16 @@ function createGgTableBody(ggData) {
     })
     
     // Se agregan las celdas a la fila asegurando que cada campo tenga su td
-    Object.values(rowData).forEach((value) => {
+    Object.entries(rowData).forEach(([key, value]) => {
       const td = document.createElement("td")
-      // Asegurar que siempre haya contenido, aunque sea vacío
-      td.textContent = value !== null && value !== undefined ? String(value) : ""
+      
+      // Formatear importes usando la función utilitaria
+      if (key === "importe") {
+        td.textContent = formatCurrency(value)
+      } else {
+        td.textContent = value !== null && value !== undefined ? String(value) : ""
+      }
+      
       tr.appendChild(td)
     })
     // Se agrega la fila al cuerpo de la tabla
@@ -3465,9 +3501,18 @@ function generateProrrateoTable(prorrateoRecords) {
       record.año
     ]
     
-    values.forEach(value => {
+    values.forEach((value, index) => {
       const td = document.createElement('td')
-      td.textContent = value !== null && value !== undefined ? String(value) : ''
+      if (value !== null && value !== undefined) {
+        // Aplicar formato de moneda al campo "Importe" (índice 6)
+        if (index === 6) {
+          td.textContent = formatCurrency(value)
+        } else {
+          td.textContent = String(value)
+        }
+      } else {
+        td.textContent = ''
+      }
       tr.appendChild(td)
     })
     
