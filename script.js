@@ -43,7 +43,6 @@ const skipRecordBtn = document.querySelector("#skipRecord")
 // Variables del carrusel
 let currentRecordIndex = 0
 let apkDataArray = []
-// TODO: aplicar cambios similares a ggDataArray
 let ggDataArray = []
 
 // Elementos del componente de sustitución masiva
@@ -745,14 +744,20 @@ async function processExcelAndGenerateTable(file, dataType, tableElement) {
     let processedResult
     if (dataType === "apk") {
       processedResult = processApkDataFromExcel(rawData)
+      const accounts = generateAccountsData(rawData)
+      console.log("Cuentas generadas para APK:")
+      console.table(accounts)
       // Guardar en localStorage
       saveApkDataToLocalStorage(processedResult.processedData, processedResult.segmentNames)
       updateSegmentEditorVisibility()
       updateConfirmProrrateoButton()
     } else if (dataType === "gg") {
       processedResult = processGgDataFromExcel(rawData)
+      const accounts = generateAccountsData(rawData)
+      console.log("Cuentas generadas para las vueltas:")
+      console.table(accounts)
       // Guardar en localStorage
-      saveGgDataToLocalStorage(processedResult.processedData)
+      saveGgDataToLocalStorage(processedResult)
       updateConfirmProrrateoButton()
     } else {
       throw new Error(`Tipo de datos no soportado: ${dataType}`)
@@ -760,12 +765,20 @@ async function processExcelAndGenerateTable(file, dataType, tableElement) {
 
     // 3. Generar tabla
     const headers = getHeadersForDataType(dataType)
-    generateTableFromProcessedData(tableElement, processedResult.processedData, headers, dataType)
+    if (dataType === "apk") {
+      generateTableFromProcessedData(tableElement, processedResult.processedData, headers, dataType)
+    } else if (dataType === "gg") {
+      generateTableFromProcessedData(tableElement, processedResult, headers, dataType)
+    }
 
     // 4. Actualizar componente de sustitución masiva
     updateMassReplacementVisibility()
 
-    return processedResult.processedData
+    if (dataType === "apk") {
+      return processedResult.processedData
+    } else {
+      return processedResult
+    }
 
   } catch (error) {
     console.error(`Error en processExcelAndGenerateTable para ${dataType}:`, error)
@@ -828,7 +841,15 @@ function processApkDataFromExcel(rawData) {
     // 2️⃣ Si la primera celda empieza con "segmento"
     if (firstCell.toLowerCase().startsWith('segmento')) {
       // El nombre del segmento se encuentra despues de "Segmento:  " en esa misma celda
-      currentSegmentName = firstCell.split(' ').filter((_, index) => index > 2).join(' ').trim()
+
+      // Quiero que despues de usar "split" y usar "filter", el orden de los elementos sea invertido
+      currentSegmentName = firstCell.split(' ')
+        .filter((_, index) => index > 2)
+        .toReversed()
+        .filter((_, index) => index === 0)
+        .join(' ')
+        .trim()
+      // currentSegmentName = firstCell.split(' ').filter((_, index) => index > 2).join(' ').trim()
     }
     // 3️⃣ Si la primera celda es una fecha común de Excel
     if (firstCell.match(excelCommonDateRegex)) {
@@ -957,32 +978,21 @@ function generateTableBodyForAPK(data) {
 /**
  * Procesa los datos raw de Excel y los convierte en datos GG estructurados
  * @param {string[][]} rawData - Datos raw de Excel
- * @returns {{ processedData: Array<Object>, segmentNames: Set<string> }} - Datos procesados y nombres de segmentos
+ * @returns {Array<Object>} - Datos procesados y nombres de segmentos
  */
 function processGgDataFromExcel(rawData) {
+  // Verificar el tipo de proceso seleccionado
+  // TODO: Ajustar la re-clasificación de conceptos en GG según sea APK o EPK
+  const processType = getSelectedProcessType();
+
   // Variables para mantener el estado actual de los valores del segmento y cuenta contable
   let currentAccountName = ""
   let currentSegmentName = ""
   let currentAccountCode = ""
-  const segmentNames = new Set()
+
   const ggData = []
   let recordId = 1  // ID auto-incremental comenzando en 1
-
-  // Conceptos predefinidos
-  // Quiero que pase de ser un array a ser un objeto JSON
-  const preLoadConceptMap = {
-    "OBRA CIVIL": "OBRA CIVIL",
-    "DIESEL": "DIESEL",
-    "EQ. TRANSPORTE": "EQ. TRANSPORTE",
-    "VARIOS": "VARIOS",
-    "GASOLINA": "GASOLINA",
-    "ADMON SUELDOS": "ADMON SUELDOS",
-    "DEPRECIACIONES": "DEPRECIACIONES",
-    "SUELDOS Y SALARIOS": "SUELDOS Y SALARIOS"
-  }
   
-  // const preLoadConceptList = ["OBRA CIVIL", "DIESEL", "EQ. TRANSPORTE", "VARIOS", "GASOLINA", "ADMON SUELDOS", "DEPRECIACIONES", "SUELDOS Y SALARIOS"]
-
   // Se lee las filas de principio a fin
   for (let i = 1; i < rawData.length; i++) {
     // Se obtiene la fila actual
@@ -1003,7 +1013,13 @@ function processGgDataFromExcel(rawData) {
     // 2️⃣ Si la primera celda empieza con "segmento"
     if (firstCell.toLowerCase().startsWith('segmento')) {
       // El nombre del segmento se encuentra despues de "Segmento:  " en esa misma celda
-      currentSegmentName = firstCell.split(' ').filter((_, index) => index > 2).join(' ').trim()
+      // currentSegmentName = firstCell.split(' ').filter((_, index) => index > 2).join(' ').trim()
+      currentSegmentName = firstCell.split(' ')
+        .filter((_, index) => index > 2)
+        .toReversed()
+        .filter((_, index) => index === 0)
+        .join(' ')
+        .trim()
     }
     // 3️⃣ Si la primera celda es una fecha común de Excel
     if (firstCell.match(excelCommonDateRegex)) {
@@ -1015,29 +1031,11 @@ function processGgDataFromExcel(rawData) {
 
       const { monthString, year } = parseDateString(rowObject.fecha)
 
-      let finalConcept = currentAccountName
-      
       // Extraer la subcuenta del código contable
       // Ejemplo: 133-037-000-000-00 -> subcuenta 037 para finalmente 37
       // La subcuenta es la segunda parte del código separado por guiones
       const subAccountCode = parseInt(currentAccountCode.split('-').slice(1, 2).join('') || 0) 
-      if (['GRANJ', 'ADMIN'].some(word => rowObject.concepto.startsWith(word))) {
-        if (rowObject.concepto.startsWith('GRANJ')) {
-          finalConcept = preLoadConceptMap["SUELDOS Y SALARIOS"]
-        } else if (rowObject.concepto.startsWith('ADMIN')) {
-          finalConcept = preLoadConceptMap["ADMON SUELDOS"]
-        }
-      } else if ([20, 34, 37, 39].includes(subAccountCode)) {
-        finalConcept = preLoadConceptMap["VARIOS"]
-      } else if ([30].includes(subAccountCode)) {
-        finalConcept = preLoadConceptMap["DEPRECIACIONES"]
-      } else if ([25].includes(subAccountCode)) {
-        finalConcept = preLoadConceptMap["EQ. TRANSPORTE"]
-      } else if ([18].includes(subAccountCode)) {
-        finalConcept = preLoadConceptMap["DIESEL"]
-      } else if ([17].includes(subAccountCode)) {
-        finalConcept = preLoadConceptMap["GASOLINA"]
-      }
+      let finalConcept = changeGGConceptByProcessType(rowObject, processType, subAccountCode, currentAccountName);
 
       const newRowObject = {
         id: recordId++,  // ID auto-incremental único
@@ -1054,14 +1052,141 @@ function processGgDataFromExcel(rawData) {
       }
 
       ggData.push(newRowObject)
-      segmentNames.add(newRowObject.vuelta)
     }
   }
 
-  return {
-    processedData: ggData,
-    segmentNames: segmentNames
+  return ggData
+}
+
+/** 
+ * @param {{ fecha: string; tipo: string; numero: string;  concepto: string; ref: string; cargos: string; }} rowObject
+ * @param {"apk" | "epk"} processType
+ * @param {number} subAccountCode
+ * @param {string} defaultConcept
+ * @returns {string} concepto resultado del ajuste
+*/
+function changeGGConceptByProcessType(rowObject, processType, subAccountCode, defaultConcept) {
+  // Lógica para cambiar el concepto según el tipo de proceso
+
+  let finalConcept = defaultConcept;
+  if (processType === "apk") {
+    // Cambios específicos para APK
+
+    // Conceptos predefinidos
+    const preLoadConceptMap = {
+      "OBRA CIVIL": "OBRA CIVIL",
+      "DIESEL": "DIESEL",
+      "EQ. TRANSPORTE": "EQ. TRANSPORTE",
+      "VARIOS": "VARIOS",
+      "GASOLINA": "GASOLINA",
+      "ADMON SUELDOS": "ADMON SUELDOS",
+      "DEPRECIACIONES": "DEPRECIACIONES",
+      "SUELDOS Y SALARIOS": "SUELDOS Y SALARIOS"
+    }
+
+    if (['GRANJ', 'ADMIN'].some(word => rowObject.concepto.startsWith(word))) {
+      if (rowObject.concepto.startsWith('GRANJ')) {
+        finalConcept = preLoadConceptMap["SUELDOS Y SALARIOS"]
+      } else if (rowObject.concepto.startsWith('ADMIN')) {
+        finalConcept = preLoadConceptMap["ADMON SUELDOS"]
+      }
+    } else if ([20, 34, 37, 39].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["VARIOS"]
+    } else if ([30].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["DEPRECIACIONES"]
+    } else if ([25].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["EQ. TRANSPORTE"]
+    } else if ([18].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["DIESEL"]
+    } else if ([17].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["GASOLINA"]
+    }
+
+  } else if (processType === "epk") {
+    // Cambios específicos para EPK
+
+    // Conceptos predefinidos
+    const preLoadConceptMap = {
+      "OBRA CIVIL": "OBRA CIVIL",
+      "DIESEL": "DIESEL",
+      "EQ. TRANSPORTE": "EQ. TRANSPORTE",
+      "VARIOS": "VARIOS",
+      "GASOLINA": "GASOLINA",
+      "SUELDOS Y SALARIOS": "SUELDOS Y SALARIOS",
+      "GAS": "GAS",
+      "ENERGIA ELECTRICA": "ENERGIA ELECTRICA",
+      "RENTA": "RENTA",
+      "ALIMENTO": "ALIMENTO",
+      "LIMPIEZA": "LIMPIEZA",
+      "MEDICINA": "MEDICINA",
+      "UNIFORMES Y BOTAS": "UNIFORMES Y BOTAS"
+    }
+
+    // Sueldos administrativos no existen
+
+    if (subAccountCode >= 1 && subAccountCode <= 19) {
+      finalConcept = preLoadConceptMap["SUELDOS Y SALARIOS"]
+    } else if ([21].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["GASOLINA"]
+    } else if ([22].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["DIESEL"]
+    } else if ([23].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["UNIFORMES Y BOTAS"]
+    } else if ([24].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["VARIOS"]
+    } else if ([25].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["EQ. TRANSPORTE"]
+    } else if ([27].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["LIMPIEZA"]
+    } else if ([28].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["GAS"]
+    } else if ([29].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["RENTA"]
+    } else if ([30].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["ENERGIA ELECTRICA"]
+    } else if ([31].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["MEDICINA"]
+    } else if ([35].includes(subAccountCode)) {
+      finalConcept = preLoadConceptMap["ALIMENTO"]
+    }
   }
+
+  return finalConcept;
+}
+
+/**
+ * Procesa los datos raw de Excel y los convierte en datos GG estructurados
+ * @param {string[][]} rawData - Datos raw de Excel
+ * @returns {{ accounts: Array<{code: string, name: string}> }} - Datos de cuentas contables
+ */
+function generateAccountsData(rawData) {
+  // Variables para mantener el estado actual de los valores del segmento y cuenta contable
+  let currentAccountName = ""
+  let currentAccountCode = ""
+
+  const accounts = []
+
+  // Se lee las filas de principio a fin
+  for (let i = 1; i < rawData.length; i++) {
+    // Se obtiene la fila actual
+    const row = rawData[i]
+    // Se obtiene el valor de la primera columna
+    const firstCell = String(row?.[0] || '').trim()
+    const secondCell = String(row?.[1] || '').trim()
+
+    // Se identifica el tipo de fila según el valor de la primera columna
+
+    // 133-000-000-000-00	PRODUCCION DE CERDOS EN PROCESO
+    // 1️⃣ Si la primera celda es un codigo de cuenta contable
+    if (firstCell.match(accountNumberRegex)) {
+      // La segunda celda es el nombre de la cuenta contable, y se guarda en la variable de estado
+      currentAccountName = secondCell
+      currentAccountCode = firstCell
+      accounts.push({ code: currentAccountCode, name: currentAccountName })
+    }
+  }
+
+  return accounts
 }
 
 /**
@@ -1131,7 +1256,10 @@ function saveGgDataToLocalStorage(ggData) {
  */
 function generateTableBodyForGG(data) {
   // 1. Procesar los datos
-  const { processedData, segmentNames } = processGgDataFromExcel(data)
+  const processedData = processGgDataFromExcel(data)
+
+  const accounts = generateAccountsData(data)
+  console.log("Cuentas contables extraídas:", accounts)
 
   // 2. Crear el cuerpo de la tabla
   const tbody = createGgTableBody(processedData)
