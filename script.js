@@ -3457,13 +3457,13 @@ function generateProrrateoData() {
       return
     }
 
-    // Calcular totales por concepto
+    // Calcular totales por concepto (incluir valores negativos)
     const conceptTotals = new Map()
     ggData.forEach(record => {
       const concepto = record.concepto
       const importe = parseFloat(record.importe) || 0
 
-      if (concepto && importe > 0) {
+      if (concepto && importe !== 0) {
         conceptTotals.set(concepto, (conceptTotals.get(concepto) || 0) + importe)
       }
     })
